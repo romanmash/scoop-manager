@@ -1,0 +1,8 @@
+.logs/
+.tmp/
+.cursor/
+.vscode/
+/backup/
+/config/apps/export_apps_*.json
+/config/scoop/export_scoop_*.json
+/config/manager_config.local.json

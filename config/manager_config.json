@@ -1,0 +1,34 @@
+{
+  "manager": {
+    "version": "1.0.0"
+  },
+  "backup": {
+    "compression_level": "Optimal"
+  },
+  "exports": {
+    "add_version_to_unlocked_apps": false
+  },
+  "logging": {
+    "enabled": true
+  },
+  "updates": {
+    "remove_old_versions": true,
+    "freeze_scoop_core_updates": false
+  },
+  "core": {
+    "apps": [
+      "scoop",
+      "7zip",
+      "git"
+    ]
+  },
+  "stealth": {
+    "exclude_paths": [
+      "whatever_string_to_exclude"
+    ]
+  },
+  "virustotal": {
+    "api_key": "YOUR_API_KEY_HERE",
+    "lookup": true
+  }
+}
