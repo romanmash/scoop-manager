@@ -1,0 +1,29 @@
+{
+  "buckets": [
+    {"name": "main"},
+    {"name": "extras"},
+    {"name": "versions"},
+    {"name": "nirsoft"},
+    {"name": "sysinternals"}	
+  ],
+  "apps": [
+    {"name": "innounp", "skip": true},
+    {"name": "dark", "skip": true},
+    {"name": "scoop-search", "skip": true},
+    {"name": "notepadplusplus", "skip": true},
+    {"name": "unigetui", "skip": true},
+    {"name": "ipnetinfo", "version": "1.90", "hold": true},
+    {"name": "cryptomator", "skip": true},
+    {"name": "rclone", "version": "1.68.0", "pin": true, "current": true},
+    {"name": "rclone", "version": "1.69.0", "pin": true},
+    {"name": "rclone", "skip": true},
+    {"name": "rclone-browser", "skip": true},
+    {"name": "everything", "skip": true},
+    {"name": "docker", "skip": true},
+    {"name": "podman", "skip": true},
+    {"name": "terraform", "skip": true},
+    {"name": "cursor", "skip": true},
+    {"name": "windsurf", "skip": true},
+    {"name": "codex", "skip": true}
+  ]
+}

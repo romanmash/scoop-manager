@@ -1,0 +1,4 @@
+<#
+.SYNOPSIS
+Uninstall section
+#>

@@ -1,0 +1,35 @@
+{
+  "buckets": [
+    {"name": "main"},
+    {"name": "extras"},
+    {"name": "versions"},
+    {"name": "nirsoft"},
+    {"name": "sysinternals"}
+  ],
+  "apps": [
+    {"name": "7zip"},
+    {"name": "innounp"},
+    {"name": "dark"},
+    {"name": "scoop-search"},
+    {"name": "unigetui", "version": "3.3.5", "hold": true},
+    {"name": "ipnetinfo", "version": "1.90", "hold": true},
+    {"name": "cryptomator"},
+    {"name": "rclone", "version": "1.68.0", "pin": true, "current": true},
+    {"name": "rclone", "version": "1.69.0", "pin": true},
+    {"name": "rclone"},
+    {"name": "rclone-browser"},
+    {"name": "everything"},
+    {"name": "docker", "version": "28.4.0", "pin": true},
+    {"name": "docker", "version": "28.5.0", "current": true},
+    {"name": "podman", "version": "5.7.0", "current": true},
+    {"name": "podman", "version": "5.6.0", "pin": true},
+    {"name": "terraform", "version": "1.13.0", "pin": true},
+    {"name": "terraform", "version": "1.13.2", "pin": true},
+    {"name": "terraform", "version": "1.13.4", "current": true},
+    {"name": "cursor", "version": "2.0.77", "hold": true, "skip": true},
+    {"name": "windsurf", "hold": true},
+    {"name": "codex", "version": "0.57.0", "pin": true, "current": true},
+    {"name": "codex", "version": "0.56.0", "pin": true}
+  ]
+}
+
