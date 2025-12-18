@@ -55,7 +55,7 @@ echo   SCOOP INTERACTIVE SESSION
 echo =========================================
 echo.
 echo You can now run Scoop commands interactively.
-echo Use: $scoopCmd <command>
+echo Use: $scoopCmd ^<command^>
 echo Example: $scoopCmd bucket list
 echo Type "$scoopCmd help" for available commands.
 echo Type "exit" to close this window.
@@ -69,9 +69,8 @@ echo.
 
 cd /d "%SCOOP%"
 
-cmd /k
 "@
-    
+
     # Write batch file
     $batchContent | Set-Content -Path $tempBatch -Encoding ASCII
     
