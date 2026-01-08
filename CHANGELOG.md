@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 (2026-01-08)
+
+### Fixed
+- Updated the bundled Scoop installer patches (`patch/install_orig.ps1`, `patch/install.ps1`) to match upstream installer changes while preserving stealth mode (no persistent PATH writes).
+
 ## 1.0.1 (2025-12-18)
 
 ### Fixed
