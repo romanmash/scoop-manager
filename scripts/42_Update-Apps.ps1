@@ -142,15 +142,22 @@ Import-Module $UpdateConfigPath -Force
 # Generate timestamp for this backup
 $backupTimestamp = Get-Timestamp
 
-# Backup persist folder
-Write-Host "[*] Creating Persist Backup..."
-$persistBackupPath = Backup-PersistFolder -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot -Timestamp $backupTimestamp
-if ($persistBackupPath) {
-    $archiveSize = (Get-Item $persistBackupPath).Length
-    $archiveSizeMB = [math]::Round($archiveSize / 1MB, 2)
-    Write-Host "[OK] Persist backup created: $persistBackupPath ($archiveSizeMB MB)"
+# Read update configuration
+$updateSettings = Get-UpdateConfig -ProjectRoot $ProjectRoot
+
+# Backup persist folder (optional)
+if ($updateSettings.BackupPersistBeforeUpdate) {
+    Write-Host "[*] Creating Persist Backup..."
+    $persistBackupPath = Backup-PersistFolder -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot -Timestamp $backupTimestamp
+    if ($persistBackupPath) {
+        $archiveSize = (Get-Item $persistBackupPath).Length
+        $archiveSizeMB = [math]::Round($archiveSize / 1MB, 2)
+        Write-Host "[OK] Persist backup created: $persistBackupPath ($archiveSizeMB MB)"
+    } else {
+        Write-Host "[*] No persist folder to backup"
+    }
 } else {
-    Write-Host "[*] No persist folder to backup"
+    Write-Host "[*] Persist backup is disabled by config (updates.backup_persist_before_update = false)"
 }
 
 # Export apps configuration
@@ -164,8 +171,7 @@ if ($appsExportPath) {
 
 Write-Host ""
 
-# Get update configuration
-$removeOldVersions = Get-UpdateConfig -ProjectRoot $ProjectRoot
+$removeOldVersions = $updateSettings.RemoveOldVersions
 
 # Track original current versions before updates
 $originalCurrentVersions = @{}

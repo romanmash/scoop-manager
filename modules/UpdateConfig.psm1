@@ -7,7 +7,9 @@ Provides functions for reading update configuration from manager_config.json.
 
 .EXAMPLE
 Import-Module "$PSScriptRoot\UpdateConfig.psm1" -Force
-$removeOldVersions = Get-UpdateConfig -ProjectRoot $ProjectRoot
+$updateSettings = Get-UpdateConfig -ProjectRoot $ProjectRoot
+$updateSettings.RemoveOldVersions
+$updateSettings.BackupPersistBeforeUpdate
 #>
 
 function Get-UpdateConfig {
@@ -25,15 +27,21 @@ function Get-UpdateConfig {
     }
     Import-Module $ManagerConfigPath -Force
     
-    # Default: remove old versions
-    $removeOldVersions = $true
+    $settings = [pscustomobject]@{
+        RemoveOldVersions = $true
+        BackupPersistBeforeUpdate = $true
+    }
     $config = Get-ManagerConfigJson -ProjectRoot $ProjectRoot
     
     if ($config -and $config.updates -and ($config.updates.PSObject.Properties.Name -contains 'remove_old_versions')) {
-        $removeOldVersions = [bool]$config.updates.remove_old_versions
+        $settings.RemoveOldVersions = [bool]$config.updates.remove_old_versions
+    }
+
+    if ($config -and $config.updates -and ($config.updates.PSObject.Properties.Name -contains 'backup_persist_before_update')) {
+        $settings.BackupPersistBeforeUpdate = [bool]$config.updates.backup_persist_before_update
     }
     
-    return $removeOldVersions
+    return $settings
 }
 
 Export-ModuleMember -Function @(

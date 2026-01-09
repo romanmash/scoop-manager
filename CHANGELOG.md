@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 (2026-01-09)
+
+### Added
+- Added `updates.backup_persist_before_update` to optionally skip the persist archive in `42_Update-Apps.ps1`.
+
 ## 1.0.3 (2026-01-09)
 
 ### Fixed

@@ -1,6 +1,6 @@
 {
   "manager": {
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "backup": {
     "compression_level": "Optimal"
@@ -12,7 +12,8 @@
     "enabled": true
   },
   "updates": {
-    "remove_old_versions": true,
+    "remove_old_versions": false,
+    "backup_persist_before_update": false,
     "freeze_scoop_core_updates": false
   },
   "core": {

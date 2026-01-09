@@ -309,6 +309,7 @@ The file `config/manager_config.json` controls several behaviours of the manager
 - `core.apps` - list of "core" apps that are allowed in a fresh installation and are not removed by script 91.
 - `exports.add_version_to_unlocked_apps` - when `true`, `export_apps_*.json` includes explicit `version` even for unlocked apps (not held/pinned); when `false`, unlocked apps omit `version` so imports install the latest.
 - `logging.enabled` - enables or disables central transcript logging to `.logs/scoop_manager.log`.
+- `updates.backup_persist_before_update` - when `true`, script **42_Update-Apps** creates a persist backup before updating; when `false`, it skips the persist archive step.
 - `updates.remove_old_versions` - when `true`, script **42_Update-Apps** removes obsolete, non-current, non-pinned versions after updating apps; when `false`, old versions are kept.
 - `updates.freeze_scoop_core_updates` - emergency switch that suppresses Scoop's internal "is_scoop_outdated" self-check by periodically updating `last_update`, reducing surprise self-updates while leaving explicit `scoop update` calls unchanged.
 - `stealth.exclude_paths` - optional list of substrings for the stealth watchdog to ignore when scanning PATH entries containing `portable_scoop` (see Technical Details for examples).
