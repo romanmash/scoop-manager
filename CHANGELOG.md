@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 (2026-01-09)
+
+### Fixed
+- Fixed `scoop install app@version` failing with `You cannot call a method on a null-valued expression` by hardening the patched Scoop `lib/manifest.ps1` (infer bucket from `install.json` URL / fall back to URL when bucket is missing).
+
 ## 1.0.2 (2026-01-08)
 
 ### Fixed

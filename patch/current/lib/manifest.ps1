@@ -55,6 +55,14 @@ function Get-Manifest($app) {
                 $bucket = $install_info.bucket
                 if (!$bucket) {
                     $url = $install_info.url
+                    # PATCHED: Infer bucket from local manifest URL stored in install.json
+                    # Purpose: Versioned installs may omit bucket and only store a local manifest path;
+                    # without this, manifest_path resolves to empty and app@version fails.
+                    # If the manifest URL points at a local bucket file (common for versioned installs),
+                    # infer the bucket name so callers can still resolve `manifest_path`.
+                    if (-not $bucket -and $url -and ($url -is [string]) -and ($url -match '\\\\buckets\\\\(?<bucket>[^\\\\]+)\\\\bucket\\\\')) {
+                        $bucket = $Matches['bucket']
+                    }
                     if ($url -match '^(ht|f)tps?://|\\\\') {
                         $manifest = url_manifest $url
                     }
@@ -208,9 +216,17 @@ function Get-SupportedArchitecture($manifest, $architecture) {
 
 function generate_user_manifest($app, $bucket, $version) {
     # 'autoupdate.ps1' 'buckets.ps1' 'manifest.ps1'
-    $app, $manifest, $bucket, $null = Get-Manifest "$bucket/$app"
+    $app, $manifest, $bucket, $url = Get-Manifest "$bucket/$app"
     if ("$($manifest.version)" -eq "$version") {
+        # PATCHED: Prefer bucket manifest path; fall back to URL when bucket is missing
+        # Purpose: Avoid returning empty manifest paths for app@version when install.json stores only a local URL.
+        if (-not [string]::IsNullOrWhiteSpace($bucket)) {
         return manifest_path $app $bucket
+        }
+        if (-not [string]::IsNullOrWhiteSpace($url)) {
+            return $url
+        }
+        return $null
     }
     warn "Given version ($version) does not match manifest ($($manifest.version))"
     warn "Attempting to generate manifest for '$app' ($version)"
