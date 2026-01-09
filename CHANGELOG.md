@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5 (2026-01-09)
+
+### Fixed
+- Made `52_Cleanup-OldVersions.ps1` use the shared robust directory removal helper to handle locked/permission edge cases.
+
 ## 1.0.4 (2026-01-09)
 
 ### Added

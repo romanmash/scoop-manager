@@ -1,5 +1,12 @@
 # Progress Log
 
+## 2026-01-09
+
+- Added optional persist backup flag for app updates and wired it into script 42.
+- Hardened versioned installs by patching Scoop `lib/manifest.ps1` to handle missing bucket in `install.json`.
+- Improved old-version cleanup reliability by using the shared robust directory removal helper in script 52.
+- Validation: ran the affected scripts in a local test run; confirmed 42_ updates and 52_ cleanup complete without the prior errors.
+
 ## 2025-12-31
 
 - Refactored script bootstrapping:
@@ -20,4 +27,3 @@ Validation:
 
 Follow-ups:
 - Continue to keep `systemPatterns.md` and `decisionLog.md` updated as further structural changes are made.
-

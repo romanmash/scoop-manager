@@ -30,6 +30,12 @@ Import-Module $UpdatableAppsPath -Force
 $BeforeAfterPath = Join-Path $ProjectRoot 'modules\BeforeAfterState.psm1'
 Import-Module $BeforeAfterPath -Force
 
+# Load FileRemoval module for robust directory deletion
+$FileRemovalPath = Join-Path $ProjectRoot 'modules\FileRemoval.psm1'
+if (Test-Path $FileRemovalPath) {
+    Import-Module $FileRemovalPath -Force
+}
+
 Write-SectionHeader -Title 'CLEANUP OLD VERSIONS'
 
 # Check if Scoop is installed - required for cleanup (centralized check)
@@ -90,8 +96,17 @@ foreach ($appName in $appVersions.Keys) {
             $versionDir = Join-Path $ScoopRoot "apps\$appName\$version"
             if (Test-Path $versionDir) {
                 try {
-                    Remove-Item -Path $versionDir -Recurse -Force -ErrorAction Stop
-                    $totalRemoved++
+                    if (Get-Command Remove-DirectorySafe -ErrorAction SilentlyContinue) {
+                        $removed = Remove-DirectorySafe -Path $versionDir -ScoopRoot $ScoopRoot
+                        if ($removed) {
+                            $totalRemoved++
+                        } else {
+                            Write-Error "Failed to remove $appName version $version (Remove-DirectorySafe returned false)."
+                        }
+                    } else {
+                        Remove-Item -LiteralPath $versionDir -Recurse -Force -ErrorAction Stop
+                        $totalRemoved++
+                    }
                 } catch {
                     Write-Error "Failed to remove $appName version $version : $_"
                 }
