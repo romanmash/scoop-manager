@@ -1,0 +1,85 @@
+{
+  "brave": [
+    {
+      "link": "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\",
+      "target": "persist\\brave\\User Data\\",
+      "notes": "all browser profiles"
+    }
+  ],
+  "gitextensions": [
+    {
+      "link": "apps\\gitextensions\\current\\GitExtensions.settings",
+      "target": "persist\\gitextensions\\GitExtensions.settings"
+    }
+  ],
+  "g-helper": [
+    {
+      "link": "%APPDATA%\\GHelper\\",
+      "target": "persist\\g-helper\\data\\"
+    }
+  ],
+  "notepadplusplus": [
+    {
+      "link": "apps\\notepadplusplus\\current\\backup\\",
+      "target": "persist\\notepadplusplus\\backup\\"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\cloud\\",
+      "target": "persist\\notepadplusplus\\cloud\\"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\plugins\\",
+      "target": "persist\\notepadplusplus\\plugins\\"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\themes\\",
+      "target": "persist\\notepadplusplus\\themes\\"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\userDefineLangs\\",
+      "target": "persist\\notepadplusplus\\userDefineLangs\\"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\config.xml",
+      "target": "persist\\notepadplusplus\\config.xml"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\nativeLang.xml",
+      "target": "persist\\notepadplusplus\\nativeLang.xml"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\session.xml",
+      "target": "persist\\notepadplusplus\\session.xml"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\shortcuts.xml",
+      "target": "persist\\notepadplusplus\\shortcuts.xml"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\stylers.xml",
+      "target": "persist\\notepadplusplus\\stylers.xml"
+    },
+    {
+      "link": "apps\\notepadplusplus\\current\\userDefineLang.xml",
+      "target": "persist\\notepadplusplus\\userDefineLang.xml"
+    }
+  ],
+  "sumatrapdf": [
+    {
+      "link": "apps\\sumatrapdf\\current\\sumatrapdfcache\\",
+      "target": "persist\\sumatrapdf\\sumatrapdfcache\\",
+      "notes": "It seems to be corrected by Scoop already"
+    },
+    {
+      "link": "apps\\sumatrapdf\\current\\SumatraPDF-settings.txt",
+      "target": "persist\\sumatrapdf\\SumatraPDF-settings.txt",
+      "notes": "It seems to be corrected by Scoop already"
+    }
+  ],
+  "xnviewmp": [
+    {
+      "link": "%APPDATA%\\XnViewMP\\",
+      "target": "persist\\xnviewmp\\"
+    }
+  ]
+}

@@ -60,6 +60,12 @@ if (Test-Path $FileRemovalPath) {
     Import-Module $FileRemovalPath -Force
 }
 
+# Load persist links module (optional)
+$PersistLinksPath = Join-Path $ProjectRoot 'modules\PersistLinks.psm1'
+if (Test-Path -LiteralPath $PersistLinksPath) {
+    Import-Module $PersistLinksPath -Force
+}
+
 # Load VirusTotal integration (best-effort)
 $vtSettings = $null
 $VirusTotalInitPath = Join-Path $ProjectRoot 'modules\VirusTotalInit.psm1'
@@ -274,6 +280,10 @@ if ($updatableVersions -and $updatableVersions.Count -gt 0) {
                         }
                     }
                 }
+            }
+
+            if (Get-Command -Name Invoke-PersistLinks -ErrorAction SilentlyContinue) {
+                Invoke-PersistLinks -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot -AppName $appName
             }
             
             Write-Host "[OK] $appName updated to version $latestVersion"

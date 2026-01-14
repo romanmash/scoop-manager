@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6 (2026-01-09)
+
+### Added
+- Added `config/persist_links.json` and script `27_Fix-PersistLinks.ps1` for optional relinks, plus automatic hooks after install/update/import flows.
+
 ## 1.0.5 (2026-01-09)
 
 ### Fixed

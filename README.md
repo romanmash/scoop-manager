@@ -59,6 +59,7 @@ scripts\
   23_Import-Apps.ps1
   24_Restore-Persist.ps1
   26_Restore-MigrationPack.ps1
+  27_Fix-PersistLinks.ps1
   28_Scan-InstalledApps.ps1
   29_Import-Scoop.ps1
 
@@ -106,6 +107,7 @@ modules\
   VirusTotalInit.psm1                   # Best-effort VirusTotal integration init
   RunningScoopApps.psm1                 # Detect/close running Scoop apps
   FileRemoval.psm1                      # Robust directory removal with retries/fallbacks
+  PersistLinks.psm1                     # Persist relink helper for apps with non-standard data paths
   PathTools.psm1                        # Safe path resolution helpers
   ScoopPathTools.psm1                   # Path migration helpers
   JsonFile.psm1, BackupConfig.psm1,     # And other focused helper modules
@@ -205,6 +207,7 @@ Details for each script are in the “Script Descriptions” section below.
 | **23** | Imports apps from the latest `export_apps_*.json` in `config/apps/` (produced by script 71). Uses the same JSON format as `init_apps.json`. Runs only on fresh installations. |
 | **24** | Restores `portable_scoop\persist` from the latest backup in `backup/persist\`. Skips restore if `persist\` is not empty (you must run `54` first). |
 | **26** | Restores a migration pack (apps + config + persist) from a ZIP archive in `backup/migration\`. Validates fresh installation, updates paths using `ScoopPathTools`. |
+| **27** | Fixes persist relinks defined in `config/persist_links.json` (preview + confirmation). Runs automatically after installs, updates, and imports; can also be run manually. |
 | **28** | Scans installed apps using VirusTotal (and optional Windows Defender) and prints a summary table of results plus per-app details (including shared `persist\<app>` folders). |
 | **29** | Imports apps from canonical `export_scoop_*.json` in `config/scoop\` (native `scoop import`). Runs only on fresh installations. |
 
@@ -314,6 +317,30 @@ The file `config/manager_config.json` controls several behaviours of the manager
 - `updates.freeze_scoop_core_updates` - emergency switch that suppresses Scoop's internal "is_scoop_outdated" self-check by periodically updating `last_update`, reducing surprise self-updates while leaving explicit `scoop update` calls unchanged.
 - `stealth.exclude_paths` - optional list of substrings for the stealth watchdog to ignore when scanning PATH entries containing `portable_scoop` (see Technical Details for examples).
 - `virustotal.api_key`, `virustotal.lookup` - configuration for VirusTotal integration; see the next section for details.
+
+## Persist links database
+
+Some apps store data outside Scoop's `persist` folder. Use `config/persist_links.json` to define relinks for those apps.
+
+Key rules:
+- Each top-level key is an app name, and its value is an array of link pairs.
+- `target` always starts with `persist\` (relative to `portable_scoop\persist`).
+- Trailing `\` in `target` means a folder link; otherwise it is a file link.
+- `link` is absolute (supports env vars) or starts with `apps\` for `portable_scoop\apps\...`.
+- Links are applied only if the app is installed.
+- `notes` is optional and ignored by the tool (for human context).
+
+Example:
+```json
+{
+  "brave": [
+    {
+      "link": "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\",
+      "target": "persist\\brave\\User Data\\"
+    }
+  ]
+}
+```
 
 ## VirusTotal integration (optional)
 

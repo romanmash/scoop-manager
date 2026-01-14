@@ -278,6 +278,12 @@ if (Test-Path $ScoopShim) {
             }
         }
 
+        # Load persist links module (optional)
+        $PersistLinksPath = Join-Path $ProjectRoot 'modules\PersistLinks.psm1'
+        if (Test-Path -LiteralPath $PersistLinksPath) {
+            Import-Module $PersistLinksPath -Force
+        }
+
         # Install everything except Scoop itself (already installed).
         $appsToInstall = @($coreApps | Where-Object { $_ -and $_ -ne 'scoop' })
         if ($appsToInstall.Count -gt 0) {
@@ -328,6 +334,10 @@ if (Test-Path $ScoopShim) {
                     Write-Host ""
                     Write-Warning "Failed to install $appName (exit code: $installExitCode)."
                     Write-Host "[*] You can retry later with: scoop install $appName"
+                }
+
+                if (Test-Path -LiteralPath $appDir -and (Get-Command -Name Invoke-PersistLinks -ErrorAction SilentlyContinue)) {
+                    Invoke-PersistLinks -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot -AppName $appName
                 }
                 Write-Host ""
             }

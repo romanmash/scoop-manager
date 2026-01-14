@@ -46,6 +46,12 @@ if (Test-Path -LiteralPath $VirusTotalInitPath) {
     }
 }
 
+# Load persist links module (optional)
+$PersistLinksPath = Join-Path $ProjectRoot 'modules\PersistLinks.psm1'
+if (Test-Path -LiteralPath $PersistLinksPath) {
+    Import-Module $PersistLinksPath -Force
+}
+
 Write-SectionHeader -Title 'IMPORTING (CANONICAL FORMAT)'
 
 # Pick default export file if none specified
@@ -130,6 +136,10 @@ $ErrorActionPreference = 'Stop'
 Write-Host ""
 
 Write-SectionHeader -Title '[OK] Import completed!'
+
+if (Get-Command -Name Invoke-PersistLinks -ErrorAction SilentlyContinue) {
+    Invoke-PersistLinks -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot
+}
 
 # Show final state
 Show-BeforeAfterState -ScoopRoot $ScoopRoot -ScoopShim $ScoopShim -ShowAfter

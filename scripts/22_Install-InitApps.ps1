@@ -50,6 +50,12 @@ if (-not (Test-Path $UpdatableAppsPath)) {
 }
 Import-Module $UpdatableAppsPath -Force
 
+# Load persist links module (optional)
+$PersistLinksPath = Join-Path $ProjectRoot 'modules\PersistLinks.psm1'
+if (Test-Path -LiteralPath $PersistLinksPath) {
+    Import-Module $PersistLinksPath -Force
+}
+
 # Load fresh installation check module
 $TestFreshPath = Join-Path $ProjectRoot 'modules\FreshInstallation.psm1'
 $TestFreshPath = Resolve-LiteralPathSafe -Path $TestFreshPath
@@ -491,7 +497,11 @@ if ($config.apps -and $config.apps.Count -gt 0) {
             & $ScoopShim unhold $appName 2>&1 | Out-Null  # Suppress INFO messages
             Write-Host ""
         }
-        
+
+        if (Get-Command -Name Invoke-PersistLinks -ErrorAction SilentlyContinue) {
+            Invoke-PersistLinks -ProjectRoot $ProjectRoot -ScoopRoot $ScoopRoot -AppName $appName
+        }
+
         Write-Host ""
     }
 }

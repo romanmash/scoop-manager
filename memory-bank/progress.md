@@ -7,6 +7,13 @@
 - Improved old-version cleanup reliability by using the shared robust directory removal helper in script 52.
 - Validation: ran the affected scripts in a local test run; confirmed 42_ updates and 52_ cleanup complete without the prior errors.
 
+## 2026-01-10
+
+- Added a persist links database (`config/persist_links.json`) and the shared relink helper module (`modules/PersistLinks.psm1`).
+- Introduced script `27_Fix-PersistLinks.ps1` with preview/confirm flow and detailed link checks (exists, link type, target match).
+- Wired persist relinks into install/update/import flows (19, 22, 29, 42) to apply per app when installed.
+- Validation: manual run of 27_ to verify preview output and link creation behavior.
+
 ## 2025-12-31
 
 - Refactored script bootstrapping:
