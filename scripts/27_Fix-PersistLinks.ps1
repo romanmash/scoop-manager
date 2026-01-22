@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Fixes persist links for apps that store data outside the Scoop persist folder
+Fixes persist links for predefined Scoop apps
 
 .CMD
 -

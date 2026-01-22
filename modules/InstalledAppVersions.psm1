@@ -52,13 +52,27 @@ function Get-InstalledAppVersions {
                    Select-Object -ExpandProperty Name
         
         if ($versions -and $versions.Count -gt 0) {
-            # Sort versions descending (latest first)
-            try {
-                $sortedVersions = $versions | Sort-Object { [version]$_ } -Descending
-            } catch {
-                # If version parse fails, use string sort
-                $sortedVersions = $versions | Sort-Object -Descending
+            # Sort versions descending (latest first) without throwing on non-semver strings
+            $sortable = foreach ($version in $versions) {
+                $rawVersion = [string]$version
+                $parsed = $null
+                $isParsed = [version]::TryParse($rawVersion, [ref]$parsed)
+                if (-not $isParsed) {
+                    # Best-effort: parse numeric prefix (e.g., "3.0.6-1" => "3.0.6")
+                    if ($rawVersion -match '^[vV]?(\d+(?:\.\d+){0,3})') {
+                        $candidate = $Matches[1]
+                        $isParsed = [version]::TryParse($candidate, [ref]$parsed)
+                    }
+                }
+                [pscustomobject]@{
+                    Raw = $rawVersion
+                    IsParsed = if ($isParsed) { 0 } else { 1 }
+                    Parsed = if ($isParsed) { $parsed } else { [version]'0.0.0.0' }
+                }
             }
+            $sortedVersions = $sortable |
+                Sort-Object IsParsed, @{ Expression = { $_.Parsed }; Descending = $true }, @{ Expression = { $_.Raw }; Descending = $true } |
+                Select-Object -ExpandProperty Raw
             $result.AppVersions[$appName] = $sortedVersions
             
             # Check for pinned versions (versions with .pin file)

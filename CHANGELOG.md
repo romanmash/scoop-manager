@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7 (2026-01-22)
+
+### Fixed
+- Avoided version sort errors when installed app versions contain non-semver strings in lists/exports.
+
 ## 1.0.6 (2026-01-09)
 
 ### Added

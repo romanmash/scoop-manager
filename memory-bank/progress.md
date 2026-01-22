@@ -7,6 +7,11 @@
 - Improved old-version cleanup reliability by using the shared robust directory removal helper in script 52.
 - Validation: ran the affected scripts in a local test run; confirmed 42_ updates and 52_ cleanup complete without the prior errors.
 
+## 2026-01-22
+
+- Bumped version to 1.0.7.
+- Fixed app version sorting to handle non-semver strings without terminating errors in logs.
+
 ## 2026-01-10
 
 - Added a persist links database (`config/persist_links.json`) and the shared relink helper module (`modules/PersistLinks.psm1`).

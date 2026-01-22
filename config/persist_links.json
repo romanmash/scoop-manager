@@ -6,6 +6,18 @@
       "notes": "all browser profiles"
     }
   ],
+  "draw.io": [
+    {
+      "link": "%APPDATA%\\draw.io\\",
+      "target": "persist\\draw.io\\Roaming\\"
+    }
+  ],
+  "everything": [
+    {
+      "link": "apps\\everything\\current\\Everything.ini",
+      "target": "persist\\everything\\Everything.ini"
+    }
+  ],
   "gitextensions": [
     {
       "link": "apps\\gitextensions\\current\\GitExtensions.settings",
@@ -15,7 +27,13 @@
   "g-helper": [
     {
       "link": "%APPDATA%\\GHelper\\",
-      "target": "persist\\g-helper\\data\\"
+      "target": "persist\\g-helper\\Roaming\\"
+    }
+  ],
+  "handy": [
+    {
+      "link": "%APPDATA%\\com.pais.handy\\",
+      "target": "persist\\handy\\Roaming\\"
     }
   ],
   "notepadplusplus": [
@@ -64,6 +82,12 @@
       "target": "persist\\notepadplusplus\\userDefineLang.xml"
     }
   ],
+  "obsidian": [
+    {
+      "link": "%APPDATA%\\obsidian\\",
+      "target": "persist\\obsidian\\Roaming\\"
+    }
+  ],
   "sumatrapdf": [
     {
       "link": "apps\\sumatrapdf\\current\\sumatrapdfcache\\",
@@ -79,7 +103,8 @@
   "xnviewmp": [
     {
       "link": "%APPDATA%\\XnViewMP\\",
-      "target": "persist\\xnviewmp\\"
+      "target": "persist\\xnviewmp\\Roaming\\",
+	  "notes": "Remember: set to Current User after Scoop update"
     }
   ]
 }
