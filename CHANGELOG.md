@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 (2026-01-23)
+
+### Fixed
+- Improved app tables readability: Version/Update columns are wider and long versions are truncated with `~` to keep columns aligned (e.g. inkscape).
+
 ## 1.1.0 (2026-01-22)
 
 ### Fixed

@@ -61,6 +61,40 @@ function Format-AppListTable {
         return
     }
 
+    function Limit-AppListCellValue {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $false)]
+            [AllowNull()]
+            [string]$Value,
+
+            # Column width as used by "{0,-N}" formatting.
+            [Parameter(Mandatory = $true)]
+            [int]$Width
+        )
+
+        if ([string]::IsNullOrEmpty($Value)) {
+            return ''
+        }
+
+        # Keep 1 trailing space for readability between adjacent padded columns.
+        $maxLen = [Math]::Max(0, $Width - 1)
+        if ($Value.Length -le $maxLen) {
+            return $Value
+        }
+
+        if ($maxLen -le 1) {
+            return $Value.Substring(0, $maxLen)
+        }
+
+        # 15 chars + "~" (then the formatter adds the final space padding).
+        return ($Value.Substring(0, $maxLen - 1) + '~')
+    }
+
+    # Column widths (Version/Update are wider to fit longer version strings).
+    $versionWidth = 17
+    $updateWidth = 17
+
     # Map installed versions per app for "latest already installed" detection.
     # If the latest bucket version is already installed for an app, we treat it as up-to-date
     # even if older versions also exist.
@@ -85,11 +119,11 @@ function Format-AppListTable {
     Write-Host ""
     
     if ($ShowUpdates) {
-        Write-Host ("{0,-30}{1,-6}{2,-13}{3,-13}{4,-6}{5,-8}{6}" -f "Name", "Shim", "Version", "Update", "Hold", "Pin", "Source")
-        Write-Host ("{0,-30}{1,-6}{2,-13}{3,-13}{4,-6}{5,-8}{6}" -f "----", "----", "-------", "------", "----", "-----", "------")
+        Write-Host ("{0,-30}{1,-6}{2,-17}{3,-17}{4,-6}{5,-8}{6}" -f "Name", "Shim", "Version", "Update", "Hold", "Pin", "Source")
+        Write-Host ("{0,-30}{1,-6}{2,-17}{3,-17}{4,-6}{5,-8}{6}" -f "----", "----", "-------", "------", "----", "-----", "------")
     } else {
-        Write-Host ("{0,-30}{1,-6}{2,-13}{3,-6}{4,-8}{5}" -f "Name", "Shim", "Version", "Hold", "Pin", "Source")
-        Write-Host ("{0,-30}{1,-6}{2,-13}{3,-6}{4,-8}{5}" -f "----", "----", "-------", "----", "-----", "------")
+        Write-Host ("{0,-30}{1,-6}{2,-17}{3,-6}{4,-8}{5}" -f "Name", "Shim", "Version", "Hold", "Pin", "Source")
+        Write-Host ("{0,-30}{1,-6}{2,-17}{3,-6}{4,-8}{5}" -f "----", "----", "-------", "----", "-----", "------")
     }
     
     $buckets = $null
@@ -99,7 +133,7 @@ function Format-AppListTable {
     
     foreach ($app in $sortedApps) {
         $shimCol = if ($app.Current) { "   >" } else { "" }
-        $versionCol = $app.Version
+        $versionCol = Limit-AppListCellValue -Value ([string]$app.Version) -Width $versionWidth
         $updateCol = ""
         $holdCol = ""
         $pinCol = ""
@@ -152,6 +186,10 @@ function Format-AppListTable {
                 }
             }
         }
+
+        if ($updateCol) {
+            $updateCol = Limit-AppListCellValue -Value ([string]$updateCol) -Width $updateWidth
+        }
         
         # Show hold status for all versions of held apps
         if ($HeldApps.ContainsKey($app.Name)) {
@@ -164,9 +202,9 @@ function Format-AppListTable {
         }
         
         if ($ShowUpdates) {
-            Write-Host ("{0,-30}{1,-6}{2,-13}{3,-13}{4,-6}{5,-8}{6}" -f $app.Name, $shimCol, $versionCol, $updateCol, $holdCol, $pinCol, $sourceCol)
+            Write-Host ("{0,-30}{1,-6}{2,-17}{3,-17}{4,-6}{5,-8}{6}" -f $app.Name, $shimCol, $versionCol, $updateCol, $holdCol, $pinCol, $sourceCol)
         } else {
-            Write-Host ("{0,-30}{1,-6}{2,-13}{3,-6}{4,-8}{5}" -f $app.Name, $shimCol, $versionCol, $holdCol, $pinCol, $sourceCol)
+            Write-Host ("{0,-30}{1,-6}{2,-17}{3,-6}{4,-8}{5}" -f $app.Name, $shimCol, $versionCol, $holdCol, $pinCol, $sourceCol)
         }
     }
     Write-Host ""

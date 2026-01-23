@@ -15,6 +15,7 @@
 ## 2026-01-23
 
 - Stabilized ProcessRunner integration: ensure external-command runner and log writers are available across both menu runs and standalone scripts; reset `.tmp/process/process.log` before each menu script run.
+- Released 1.1.1: widened and truncated Version/Update columns in app tables to keep alignment when versions are long.
 
 ## 2026-01-10
 
