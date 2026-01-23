@@ -195,8 +195,14 @@ function Get-ExistingLinkInfo {
     if (-not $info.IsLink -and $info.Exists -and -not $info.IsDirectory) {
         try {
             $hardlinkTargets = @()
-            $fsutilOutput = & fsutil hardlink list $LinkPath 2>$null
-            if ($LASTEXITCODE -eq 0 -and $fsutilOutput) {
+
+            Assert-ExternalCommandRunner -Caller 'Get-LinkInfo'
+
+            $projectRoot = Split-Path -Parent $PSScriptRoot
+            $fsutilCmd = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath 'fsutil' -ArgumentList @('hardlink', 'list', $LinkPath) -Stream:$false -NoHostOutput
+            $fsutilOutput = if ($fsutilCmd.Output) { $fsutilCmd.Output -split "\r?\n" } else { @() }
+
+            if ($fsutilCmd.ExitCode -eq 0 -and $fsutilOutput) {
                 $root = [System.IO.Path]::GetPathRoot($LinkPath)
                 foreach ($line in $fsutilOutput) {
                     $trimmed = $line.Trim()

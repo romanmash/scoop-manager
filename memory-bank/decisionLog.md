@@ -173,3 +173,27 @@ Impact:
   header blocks. The main exception is `scripts/Manage-ScoopMenu.ps1`, which
   intentionally preserves its fixed separators for transcript readability.
 
+---
+
+## 2026-01-22 - Unified external command logging
+
+Context:
+
+- Native commands (notably `scoop.cmd`) may write transient/network errors to stderr.
+- When executed directly via `& ... 2>&1`, PowerShell can emit `NativeCommandError` records (with `At ... char ...`) into transcript/log files, causing console output to differ from log output.
+
+Decision:
+
+- Introduce `modules/ProcessRunner.psm1` with `Invoke-ExternalCommandLogged` and route external process calls (Scoop, git, etc.) through it.
+- Use a single stable tmp file: `.tmp\\process\\process.log` per command run.
+- When running scripts from the menu, truncate `.tmp\\process\\process.log` before each script run so it contains only the latest run.
+
+Reasoning:
+
+- Keeps console output and transcript/log output consistent.
+- Avoids confusing PowerShell error records caused by native stderr.
+- Provides “live-ish” progress while commands run.
+
+Impact:
+
+- Scripts/modules should avoid `& scoop.cmd ... 2>&1` and use `Invoke-ExternalCommandLogged` for external commands.

@@ -237,31 +237,18 @@ function Invoke-DefenderScanFolder {
     $scanStart = Get-Date
 
     # 2) Build arguments and run MpCmdRun.exe synchronously
-    $argString = "-Scan -ScanType 3 -File `"$resultPath`""
+    Assert-ExternalCommandRunner -Caller 'Invoke-DefenderScanFolder'
+
+    $args = @('-Scan', '-ScanType', '3', '-File', $resultPath)
     if ($DisableRemediation) {
-        $argString += " -DisableRemediation"
+        $args += '-DisableRemediation'
     }
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $mpCmd
-    $psi.Arguments = $argString
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.UseShellExecute        = $false
-    $psi.CreateNoWindow         = $true
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $cmdResult = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $mpCmd -ArgumentList $args -Stream:$false -NoHostOutput
+    $exitCode = $cmdResult.ExitCode
 
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-
-    [void]$proc.Start()
-    $stdOut = $proc.StandardOutput.ReadToEnd()
-    $stdErr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-    $exitCode = $proc.ExitCode
-
-    $rawOutput = @()
-    if ($stdOut) { $rawOutput += $stdOut.TrimEnd("`r","`n") }
-    if ($stdErr) { $rawOutput += $stdErr.TrimEnd("`r","`n") }
+    $rawOutput = if ($cmdResult.Output) { $cmdResult.Output -split "\r?\n" } else { @() }
 
     # 3) Query Defender for threats for this path since scanStart
     $threatDetails = Get-DefenderThreatsForPath -Path $resultPath -Since $scanStart

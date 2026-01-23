@@ -37,6 +37,8 @@ function Export-AppsConfiguration {
     Import-Module $InstalledAppVersionsPath -Force
     $ManagerConfigPath = Join-Path $PSScriptRoot 'ManagerConfig.psm1'
     Import-Module $ManagerConfigPath -Force
+
+    Assert-ExternalCommandRunner -Caller 'Export-AppsConfiguration'
     
     # Output folder + timestamped filename
     $OutDir = New-ConfigDirectory -ProjectRoot $ProjectRoot -Subdirectory "apps"
@@ -50,7 +52,8 @@ function Export-AppsConfiguration {
     } catch { }
     
     # Get canonical list output for checking if apps are installed
-    $listOutput = & $ScoopShim list 6>&1
+    $listCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+    $listOutput = if ($listCmd.Output) { $listCmd.Output -split "\r?\n" } else { @() }
     $listText = $listOutput -join "`n"
     
     # Check if there are no apps installed
@@ -133,7 +136,8 @@ function Export-AppsConfiguration {
             $description = $null
             $homepage = $null
             $license = $null
-            $manifestOutput = & $ScoopShim cat $appName 2>&1 | Out-String
+            $manifestCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('cat', $appName) -Stream:$false -NoHostOutput
+            $manifestOutput = $manifestCmd.Output
             if ($manifestOutput) {
                 $manifest = $manifestOutput | ConvertFrom-Json
                 if ($manifest.description) { $description = $manifest.description }

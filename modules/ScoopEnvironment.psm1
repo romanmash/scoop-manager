@@ -48,6 +48,14 @@ try {
     }
 } catch { }
 
+# Ensure external command runner is available everywhere (single stable .tmp log file).
+try {
+    $processRunner = Join-Path $PSScriptRoot 'ProcessRunner.psm1'
+    if (Test-Path -LiteralPath $processRunner) {
+        Import-Module $processRunner -Force -Global -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch { }
+
 function Get-ProjectRoot {
     [CmdletBinding()]
     param(
@@ -449,10 +457,7 @@ function Initialize-ScoopEnvironment {
             if ($config -and $config.updates -and ($config.updates.PSObject.Properties.Name -contains 'freeze_scoop_core_updates')) {
                 if ([bool]$config.updates.freeze_scoop_core_updates) {
                     $nowIso = (Get-Date).ToString('o')
-                    $origEA = $ErrorActionPreference
-                    $ErrorActionPreference = 'SilentlyContinue'
-                    & $ScoopShim config last_update $nowIso | Out-Null
-                    $ErrorActionPreference = $origEA
+                    $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('config', 'last_update', $nowIso) -Stream:$false -NoHostOutput
                 }
             }
         }
@@ -544,51 +549,13 @@ function Initialize-ScoopEnvironment {
         if (Test-Path $ScoopShim) {
             # Update Scoop and buckets (this may overwrite shims)
             Write-SectionHeader -Title 'UPDATING BUCKET METADATA'
-            
-            # Temporarily change error action to Continue to prevent script termination
-            # Some errors during update are expected and handled gracefully
-            $originalErrorAction = $ErrorActionPreference
-            $ErrorActionPreference = 'Continue'
-            
-            try {
-                # Run scoop update and capture output (patch is now active, so no registry writes)
-                $updateOutput = & $ScoopShim update 2>&1
-                $updateExitCode = $LASTEXITCODE
-            
-                # Filter out expected path errors (they're handled below with informational messages)
-                $updateOutputText = $updateOutput | Out-String
-                $isPathError = $updateOutputText -match 'cannot find the path specified|path specified|The system cannot find'
-                
-                # Display output, but filter out the path error message if it's the expected one
-                if ($isPathError) {
-                    # Filter out the path error line from display
-                    $filteredOutput = $updateOutput | Where-Object {
-                        $_ -notmatch 'cannot find the path specified|path specified|The system cannot find' -and
-                        $_ -notmatch 'CategoryInfo.*NativeCommandError' -and
-                        $_ -notmatch 'FullyQualifiedErrorId'
-                    }
-                    $filteredOutput | Out-Host
-                } else {
-                    $updateOutput | Out-Host
-                }
-            } catch {
-                # Capture any exceptions (though with Continue, this shouldn't happen)
-                $updateOutput = $_
-                $updateExitCode = 1
-                $updateOutput | Out-Host
-            } finally {
-                # Restore original error action
-                $ErrorActionPreference = $originalErrorAction
-            }
-            
+
+            # Run scoop update (live-ish output) without emitting PowerShell NativeCommandError records into logs.
+            $updateResult = Invoke-ScoopUpdate -ScoopShim $ScoopShim -ProjectRoot $ProjectRoot
             Write-Host ""
-            
+
             # Patch Scoop core after update (Scoop may have overwritten lib/system.ps1)
             # This is expected behavior - we automatically patch to maintain stealth mode
-            if (-not $updateOutputText) {
-                $updateOutputText = $updateOutput | Out-String
-            }
-            
             # Import patching module
             $PatchingModulePath = Join-Path $ProjectRoot 'modules\ScoopPatching.psm1'
             if (Test-Path $PatchingModulePath) {
@@ -596,17 +563,15 @@ function Initialize-ScoopEnvironment {
                 # Apply lib patches after update (Scoop may have overwritten lib files)
                 Update-ScoopLibPatches -ScoopRoot $ScoopRoot -ProjectRoot $ProjectRoot
             }
-            
-            # If update had path errors, show info that it's resolved
-            # Path errors during update are usually transient and resolved automatically
-            if ($isPathError) {
-                Write-Host "[*] Path error during update (transient, resolved automatically)"
+
+            if ($updateResult.HadErrors) {
                 Write-Host ""
-            } elseif ($updateExitCode -ne 0) {
-                # Other errors - show warning but continue (update may have partially succeeded)
-                Write-Warning "scoop update completed with exit code $updateExitCode (some operations may have failed)"
+                $shouldContinue = Confirm-ContinueWithStaleBuckets -PromptTitle "Bucket metadata update reported errors (network/git issue)."
+                if (-not $shouldContinue) {
+                    throw "Aborted: bucket metadata update failed and user chose not to continue with stale buckets."
+                }
                 Write-Host ""
-            } else {
+                Write-Warning "Continuing with existing local bucket metadata (may be stale)."
                 Write-Host ""
             }
         }
@@ -619,6 +584,62 @@ function Initialize-ScoopEnvironment {
         ScoopRoot = $ScoopRoot
         ScoopShim = $ScoopShim
     }
+}
+
+function Invoke-ScoopUpdate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$ScoopShim,
+
+        [Parameter(Mandatory=$false)]
+        [string]$ProjectRoot = $null,
+
+        # Stream output while the process runs (best-effort "live-ish" progress).
+        [Parameter(Mandatory=$false)]
+        [bool]$Stream = $true
+    )
+
+    if (-not $ProjectRoot) {
+        $ProjectRoot = Split-Path -Parent $PSScriptRoot
+    }
+
+    Assert-ExternalCommandRunner -Caller 'Invoke-ScoopUpdate'
+
+    $cmdResult = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('update') -Stream:$Stream
+
+    # Generic detection: non-zero exit code or generic git error markers.
+    $hadErrors = $false
+    if ($cmdResult.ExitCode -ne 0) {
+        $hadErrors = $true
+    } elseif (-not [string]::IsNullOrWhiteSpace($cmdResult.Output)) {
+        if ($cmdResult.Output -match '(?im)^\s*(fatal:|error:)\s') {
+            $hadErrors = $true
+        }
+    }
+
+    return [pscustomobject]@{
+        ExitCode  = $cmdResult.ExitCode
+        Output    = $cmdResult.Output
+        HadErrors = $hadErrors
+        LogPath   = $cmdResult.LogPath
+    }
+}
+
+function Confirm-ContinueWithStaleBuckets {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$PromptTitle
+    )
+
+    Write-Warning $PromptTitle
+    Write-Host "Continue using existing local bucket metadata? (y/N): " -NoNewline
+    $answer = Read-Host
+    if ($answer -match '^(?i)y(?:es)?$') {
+        return $true
+    }
+    return $false
 }
 
 function Test-ScoopShimAvailable {
@@ -691,6 +712,8 @@ Export-ModuleMember -Function @(
     'Invoke-PortableScoop'
     'Set-StealthScoopEnvironment'
     'Update-StealthScoopPath'
+    'Invoke-ScoopUpdate'
+    'Confirm-ContinueWithStaleBuckets'
     'Test-ScoopShimAvailable'
     'Test-ScoopInstalled'
 )

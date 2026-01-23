@@ -75,6 +75,12 @@ try {
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 
+# Load shared helper modules into the menu session.
+# This ensures scripts run from the menu can rely on these exported functions consistently.
+try { Import-Module (Join-Path $ProjectRoot 'modules\TextFile.psm1') -Force | Out-Null } catch { }
+try { Import-Module (Join-Path $ProjectRoot 'modules\ConsoleUi.psm1') -Force | Out-Null } catch { }
+try { Import-Module (Join-Path $ProjectRoot 'modules\ProcessRunner.psm1') -Force | Out-Null } catch { }
+
 # Set custom console icon (best-effort, ignore failures)
 try {
     Import-Module (Join-Path $ProjectRoot 'modules\ScriptBootstrap.psm1') -Force
@@ -481,6 +487,64 @@ function Show-ScriptCompletionStatus {
     Write-Host ""
 }
 
+function Reset-ProcessLog {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectRoot
+    )
+
+    $processDir = Join-Path $ProjectRoot '.tmp\process'
+    $processLog = Join-Path $processDir 'process.log'
+
+    try { New-Item -ItemType Directory -Path $processDir -Force | Out-Null } catch { }
+
+    # Hard truncate (best-effort, but warn if it fails). This log is intended to contain output
+    # for a single menu run only, so it must be cleared before running each script.
+    try {
+        $comspec = $env:ComSpec
+        if (-not $comspec) { $comspec = 'cmd.exe' }
+
+        # Use cmd redirection for a true truncate without emitting output.
+        $quotedPath = '"' + $processLog.Replace('"', '""') + '"'
+        & $comspec /d /c "type nul > $quotedPath" | Out-Null
+    } catch {
+        Write-Warning "Failed to reset process log: $processLog ($($_.Exception.Message))"
+    }
+}
+
+function Write-MenuTextFileUtf8NoBom {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Content
+    )
+
+    try {
+        $writer = Get-Command Write-TextFileUtf8NoBom -ErrorAction SilentlyContinue
+        if ($writer) {
+            Write-TextFileUtf8NoBom -Path $Path -Content $Content
+            return
+        }
+    } catch { }
+
+    try {
+        $dir = Split-Path -Parent $Path
+        if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+    } catch {
+        # Fallback: always produce a file even if UTF-8 no-BOM write fails for any reason.
+        Set-Content -Path $Path -Value $Content -Encoding UTF8 -Force
+    }
+}
+
 function Invoke-Script([string]$twoDigits) {
     $match = Get-ChildItem -Path $ScriptDir -Filter "$twoDigits*.ps1" -File |
              Where-Object { $_.BaseName -like "$twoDigits*" } |
@@ -566,7 +630,10 @@ function Invoke-Script([string]$twoDigits) {
             Write-Host "Started: $startTimestamp"
             Write-Host "=========================================="
             Write-Host ""
-            
+
+            # Reset the unified external-process log for this run (ProcessRunner appends per command).
+            Reset-ProcessLog -ProjectRoot $ProjectRoot
+
             # Run the script - transcript will capture ALL output (pipeline + Write-Host)
             # Start-Transcript already captures everything that goes to the console, including:
             # - Success output (stdout)
@@ -647,21 +714,21 @@ function Invoke-Script([string]$twoDigits) {
                             }
                             
                             # Write cleaned transcript content to log file (rolling log - overwrite previous content)
-                            Write-TextFileUtf8NoBom -Path $logFilePath -Content $cleanedContent
+                            Write-MenuTextFileUtf8NoBom -Path $logFilePath -Content $cleanedContent
                         } else {
                             # End marker not found, write warning
                             $debugMsg = "[WARNING] Could not find transcript footer marker. Transcript saved for debugging: $transcriptPath`r`n"
-                            Write-TextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
+                            Write-MenuTextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
                         }
                     } else {
                         # Start marker not found, write warning
                         $debugMsg = "[WARNING] Could not find transcript content start marker. Transcript saved for debugging: $transcriptPath`r`n"
-                        Write-TextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
+                        Write-MenuTextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
                     }
                 } else {
                     # Transcript file exists but is empty or couldn't be read
                     $debugMsg = "[WARNING] Transcript file exists but is empty or unreadable: $transcriptPath`r`n"
-                    Write-TextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
+                    Write-MenuTextFileUtf8NoBom -Path $logFilePath -Content $debugMsg
                 }
                 
                 # Only clean up transcript file if we successfully extracted content
@@ -681,6 +748,8 @@ function Invoke-Script([string]$twoDigits) {
         Write-Host ("Script: {0}" -f $scriptName)
         Write-Host "=========================================="
         Write-Host ""
+
+        Reset-ProcessLog -ProjectRoot $ProjectRoot
         
         & $scriptFile
         $code = $LASTEXITCODE

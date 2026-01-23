@@ -233,19 +233,16 @@ if ($updatableVersions -and $updatableVersions.Count -gt 0) {
         }
         
         # Install the latest version from bucket
-        $installResult = & $ScoopShim install "${appName}@${latestVersion}" 2>&1
-        $installResult | Out-Host
-        
-        if ($LASTEXITCODE -eq 0) {
+        $installCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('install', "${appName}@${latestVersion}") -Stream:$true
+
+        if ($installCmd.ExitCode -eq 0) {
             # If we're updating a non-current version, restore the original current version
             if (-not $isUpdatingCurrent -and $originalCurrent) {
                 Write-Host "[*] Restoring original current version: $originalCurrent"
-                $resetResult = & $ScoopShim reset "${appName}@${originalCurrent}" 2>&1
-                $resetResult | Out-Host
+                $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('reset', "${appName}@${originalCurrent}") -Stream:$true
             } else {
                 # If updating current version, activate the new version
-                $resetResult = & $ScoopShim reset $appName 2>&1
-                $resetResult | Out-Host
+                $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('reset', $appName) -Stream:$true
             }
             
             # Remove old versions if configured

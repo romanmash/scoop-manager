@@ -125,6 +125,9 @@ function Invoke-VirusTotalCheckForApp {
         }
     }
 
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    Assert-ExternalCommandRunner -Caller 'Invoke-VirusTotalCheckForApp'
+
     # Decide what we pass to `scoop virustotal`.
     # Default: use the given spec (app or app@version or manifest path).
     $specForCommand = $AppSpec
@@ -165,11 +168,9 @@ function Invoke-VirusTotalCheckForApp {
         }
 
         # Generate/update the pinned manifest and hashes in the workspace.
-        $ErrorActionPreference = 'Continue'
         $downloadCmd = @('download', $AppSpec, '--no-update-scoop')
-        $null = & $ScoopShim @downloadCmd 2>&1
-        $downloadExitCode = $LASTEXITCODE
-        $ErrorActionPreference = 'Stop'
+        $downloadResult = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList $downloadCmd -Stream:$false -NoHostOutput
+        $downloadExitCode = $downloadResult.ExitCode
 
         if ($downloadExitCode -eq 0 -and $workspaceManifest -and (Test-Path -LiteralPath $workspaceManifest)) {
             $specForCommand = $workspaceManifest
@@ -202,14 +203,9 @@ function Invoke-VirusTotalCheckForApp {
 
     $cmd = @('virustotal', $specForCommand, '--no-update-scoop')
 
-    $ErrorActionPreference = 'Continue'
-    $output = & $ScoopShim @cmd 2>&1
-    $exitCode = $LASTEXITCODE
-    $ErrorActionPreference = 'Stop'
-
-    if (-not $output) {
-        $output = @()
-    }
+    $vtResult = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList $cmd -Stream:$false -NoHostOutput
+    $exitCode = $vtResult.ExitCode
+    $output = if ($vtResult.Output) { $vtResult.Output -split "\r?\n" } else { @() }
 
     $detections = $null
     $totalEngines = $null

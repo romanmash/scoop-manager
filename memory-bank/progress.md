@@ -9,8 +9,12 @@
 
 ## 2026-01-22
 
-- Bumped version to 1.0.7.
-- Fixed app version sorting to handle non-semver strings without terminating errors in logs.
+- Released 1.0.7: fixed app version sorting to handle non-semver strings without terminating errors in logs.
+- Released 1.1.0: fixed multi-version update detection (41/42), improved bucket update robustness (prompt to continue with stale buckets when `scoop update` reports errors) (41/42/49), and unified external command execution (Scoop/git/etc.) via `modules/ProcessRunner.psm1` to keep console output consistent with transcript/log files and avoid `NativeCommandError` noise.
+
+## 2026-01-23
+
+- Stabilized ProcessRunner integration: ensure external-command runner and log writers are available across both menu runs and standalone scripts; reset `.tmp/process/process.log` before each menu script run.
 
 ## 2026-01-10
 

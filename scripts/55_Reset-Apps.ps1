@@ -14,6 +14,6 @@ Import-Module $ModulePath -Force
 $ScoopEnvModule = Join-Path $PSScriptRoot '..\modules\ScoopEnvironment.psm1'
 Import-Module $ScoopEnvModule -Force
 
-Invoke-ScoopCommandScript -Command "reset" -CommandArgs "*" -InfoMessage "Resetting all apps..."
+Invoke-ScoopCommandScript -Command "reset" -CommandArgs "*" -InfoMessage "Resetting all apps..." | Out-Null
 
 exit 0

@@ -44,19 +44,13 @@ Write-SectionHeader -Title 'EXPORTING (CANONICAL FORMAT)'
 # Show what's being exported
 Write-SubsectionHeader -Title 'Current Apps'
 
-# Suppress error action for list command as it may return non-zero exit code
-$ErrorActionPreference = 'Continue'
-& $ScoopShim list 2>&1 | Out-Host
-$ErrorActionPreference = 'Stop'
+$null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$true
 
 Write-Host ""
 
 Write-SubsectionHeader -Title 'Running Export'
-# Suppress error action for export command as it may return non-zero exit code
-$ErrorActionPreference = 'Continue'
-$export = & $ScoopShim export 2>&1
-$ErrorActionPreference = 'Stop'
-$export | Out-String | Write-TextFileUtf8NoBom -Path $exportJson
+$exportCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('export') -Stream:$false -NoHostOutput
+Write-TextFileUtf8NoBom -Path $exportJson -Content $exportCmd.Output
 Write-Host "[OK] Wrote: $exportJson"
 Write-Host ""
 

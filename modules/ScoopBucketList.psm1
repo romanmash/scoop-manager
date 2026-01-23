@@ -24,8 +24,11 @@ function ConvertFrom-ScoopBucketList {
     $buckets = @()
     
     try {
-        # Use splatting to properly pass "bucket list" as two separate arguments
-        $bucketsRaw = & $ScoopShim bucket list
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        Assert-ExternalCommandRunner -Caller 'ConvertFrom-ScoopBucketList'
+
+        $bucketCmd = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList @('bucket', 'list') -Stream:$false -NoHostOutput
+        $bucketsRaw = if ($bucketCmd.Output) { $bucketCmd.Output -split "\r?\n" } else { @() }
         if ($bucketsRaw) {
             $bucketsRaw | Select-String -Pattern '^\s*(\S+)' | ForEach-Object {
                 $name = $_.Matches.Groups[1].Value

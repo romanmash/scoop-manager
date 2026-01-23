@@ -129,10 +129,7 @@ if ($vtSettings -and $vtSettings.EnabledOnInstall) {
 }
 
 Write-Host "[*] Running: scoop import"
-# Suppress error action for import command as it may return non-zero exit code
-$ErrorActionPreference = 'Continue'
-& $ScoopShim import $File 2>&1 | Out-Host
-$ErrorActionPreference = 'Stop'
+$null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('import', $File) -Stream:$true
 Write-Host ""
 
 Write-SectionHeader -Title '[OK] Import completed!'

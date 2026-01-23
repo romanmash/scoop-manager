@@ -1,9 +1,17 @@
 # Changelog
 
+## 1.1.0 (2026-01-22)
+
+### Fixed
+- Fixed update detection for multi-version installs: if the latest bucket version is already installed for an app, scripts 41/42 no longer report it as needing an update.
+- Made bucket metadata updates more resilient: on `scoop update` errors (non-zero exit or git error output), prompt to continue with local (potentially stale) buckets (41/42 via bootstrap, and 49).
+- Unified external command execution (Scoop/git/etc.) via `modules/ProcessRunner.psm1` and a single `.tmp\\process\\process.log` to avoid `NativeCommandError` noise and keep console output consistent with transcript/log files.
+- Improved menu logging stability: `.tmp\\process\\process.log` is reset before each menu script run, and log file writes no longer fail if `TextFile.psm1` isn't available in-session.
+
 ## 1.0.7 (2026-01-22)
 
 ### Fixed
-- Avoided version sort errors when installed app versions contain non-semver strings in lists/exports.
+- Avoided version sort errors when installed app versions contain non-semver strings in app lists/exports.
 
 ## 1.0.6 (2026-01-09)
 

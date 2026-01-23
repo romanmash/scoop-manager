@@ -12,9 +12,10 @@ $ErrorActionPreference = 'Stop'
 $BootstrapPath = Join-Path $PSScriptRoot '..\modules\ScriptBootstrap.psm1'
 Import-Module $BootstrapPath -Force
 $ctx = Initialize-ScriptEnvironment
+$ProjectRoot = $ctx.ProjectRoot
 $ScoopRoot = $ctx.ScoopRoot
 $ScoopShim = $ctx.ScoopShim
-$ScoopEnvModule = Join-Path $ctx.ProjectRoot 'modules\ScoopEnvironment.psm1'
+$ScoopEnvModule = Join-Path $ProjectRoot 'modules\ScoopEnvironment.psm1'
 Import-Module $ScoopEnvModule -Force
 
 # Check if Scoop is installed - required for editing config (centralized check)
@@ -30,16 +31,10 @@ $choice = Read-Host "Select"
 if ($choice -eq '1') {
     $key = Read-Host "Enter key (e.g., proxy, aria2-enabled)"
     $val = Read-Host "Enter value"
-    # Suppress error action for config command as it may return non-zero exit code
-    $ErrorActionPreference = 'Continue'
-    & $ScoopShim config $key $val 2>&1 | Out-Host
-    $ErrorActionPreference = 'Stop'
+    $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('config', $key, $val) -Stream:$true
 } elseif ($choice -eq '2') {
     $key = Read-Host "Enter key to remove"
-    # Suppress error action for config command as it may return non-zero exit code
-    $ErrorActionPreference = 'Continue'
-    & $ScoopShim config rm $key 2>&1 | Out-Host
-    $ErrorActionPreference = 'Stop'
+    $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('config', 'rm', $key) -Stream:$true
 } else {
     Write-Host "[*] Exit."
 }

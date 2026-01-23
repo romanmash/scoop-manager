@@ -101,6 +101,7 @@ modules\
   ScoopCommand.psm1                     # Invoke-ScoopCommand / Invoke-ScoopCommandScript
   ConsoleUi.psm1                        # Section/subsection console headers
   TextFile.psm1                         # UTF-8 (no BOM) text/JSON writes
+  ProcessRunner.psm1                    # Unified external command runner (single .tmp\\process\\process.log)
 
   ExtendedAppList.psm1                  # App list formatting and display
   UpdatableApps.psm1                    # Detect updatable apps
@@ -218,13 +219,13 @@ Details for each script are in the “Script Descriptions” section below.
 | **31** | Lists installed buckets (`scoop bucket list`). |
 | **32** | Shows all known/official buckets (`scoop bucket known`). |
 
-### Section 4 – Update
+### Section 4 - Update
 
 | Script | Description |
 |--------|-------------|
-| **41** | Checks for available updates. Shows installed apps with versions, held/pinned status, and “Available updates” section. Also checks for Scoop updates. |
-| **42** | Updates only the apps flagged as updatable by script 41. Creates backups (persist + apps export) when updates are applied. Shows Before/After app tables. |
-| **49** | Updates Scoop itself and buckets (`scoop update`). Shows status before/after when an update is available. |
+| **41** | Checks for available updates. If multiple versions are installed, treats the app as up-to-date when the latest bucket version is already present. If `scoop update` fails (git/GitHub), prompts whether to continue with stale bucket metadata. |
+| **42** | Updates only the apps flagged as updatable by script 41 (keeps explicit `scoop install app@version`). If `scoop update` fails (git/GitHub), prompts whether to continue with stale bucket metadata. Shows Before/After app tables. |
+| **49** | Updates Scoop itself and buckets (`scoop update`). If the update reports git/network errors, prompts whether to continue with stale bucket metadata. Shows status before/after when an update is available. |
 
 ### Section 5 – Cleanup
 
@@ -311,12 +312,14 @@ The file `config/manager_config.json` controls several behaviours of the manager
 - `backup.compression_level` - compression level for backup archives used by scripts 81/89 (see Technical Details for the level table).
 - `core.apps` - list of "core" apps that are allowed in a fresh installation and are not removed by script 91.
 - `exports.add_version_to_unlocked_apps` - when `true`, `export_apps_*.json` includes explicit `version` even for unlocked apps (not held/pinned); when `false`, unlocked apps omit `version` so imports install the latest.
-- `logging.enabled` - enables or disables central transcript logging to `.logs/scoop_manager.log`.
+- `logging.enabled` - enables or disables per-script transcript logging to `.logs/<script>_<name>.log`.
 - `updates.backup_persist_before_update` - when `true`, script **42_Update-Apps** creates a persist backup before updating; when `false`, it skips the persist archive step.
 - `updates.remove_old_versions` - when `true`, script **42_Update-Apps** removes obsolete, non-current, non-pinned versions after updating apps; when `false`, old versions are kept.
 - `updates.freeze_scoop_core_updates` - emergency switch that suppresses Scoop's internal "is_scoop_outdated" self-check by periodically updating `last_update`, reducing surprise self-updates while leaving explicit `scoop update` calls unchanged.
 - `stealth.exclude_paths` - optional list of substrings for the stealth watchdog to ignore when scanning PATH entries containing `portable_scoop` (see Technical Details for examples).
 - `virustotal.api_key`, `virustotal.lookup` - configuration for VirusTotal integration; see the next section for details.
+
+External command output (Scoop/git/robocopy/etc.) is captured in `.tmp/process/process.log`. When you run scripts through `Manage-ScoopMenu.ps1`, this file is truncated before each script run so it contains output only for the latest run.
 
 ## Persist links database
 

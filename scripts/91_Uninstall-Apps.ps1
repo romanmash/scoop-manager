@@ -59,7 +59,8 @@ Show-BeforeAfterState -ScoopRoot $ScoopRoot -ScoopShim $ScoopShim -ShowBefore
 
 # Get list of installed apps (excluding scoop itself)
 try {
-    $installedRaw = & $ScoopShim list 6>&1
+    $installedCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+    $installedRaw = if ($installedCmd.Output) { $installedCmd.Output -split "\r?\n" } else { @() }
     $installedText = $installedRaw -join "`n"
     
     # Check if there are no apps installed
@@ -103,22 +104,16 @@ Write-Host ""
 
 Write-SubsectionHeader -Title 'Removing Apps'
 
-# Temporarily change error action for uninstall operations
-# Scoop may output error messages even when operations succeed
-$originalErrorAction = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-
 # Try batch uninstall first (faster)
 # Use splatting (@cmdArgs) to properly pass array elements as separate arguments
 $cmdArgs = @('uninstall') + $apps
-$output = & $ScoopShim @cmdArgs 2>&1 | Out-String
-Write-Host $output
+$null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList $cmdArgs -Stream:$true
 
 # Check if batch uninstall actually failed by checking which apps remain
 # Don't rely on exceptions since Scoop may output errors even on success
-$ErrorActionPreference = $originalErrorAction
 try {
-    $installedRaw = & $ScoopShim list 6>&1
+    $installedCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+    $installedRaw = if ($installedCmd.Output) { $installedCmd.Output -split "\r?\n" } else { @() }
     $installedText = $installedRaw -join "`n"
     
     # Check if there are no apps installed
@@ -149,11 +144,11 @@ if ($stillInstalled -and $stillInstalled.Count -gt 0) {
     Write-Host "[*] Completing uninstall for remaining apps..."
     Write-Host ""
     
-    $ErrorActionPreference = 'Continue'
     foreach ($app in $stillInstalled) {
         Write-Host "[*] Uninstalling: $app"
-        $output = & $ScoopShim uninstall $app 2>&1 | Out-String
-        
+        $uninstallCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('uninstall', $app) -Stream:$false -NoHostOutput
+        $output = $uninstallCmd.Output
+
         # Filter out "isn't installed" messages - these are not errors
         $filteredOutput = $output -split "`r?`n" | 
             Where-Object { 
@@ -167,7 +162,6 @@ if ($stillInstalled -and $stillInstalled.Count -gt 0) {
         }
         Write-Host ""
     }
-    $ErrorActionPreference = $originalErrorAction
 } else {
     Write-Host ""
 }

@@ -12,6 +12,7 @@
     - `ScoopCommand.psm1` - wrappers for running Scoop commands safely (`Invoke-ScoopCommandScript`).
     - `ConsoleUi.psm1` - shared section/subsection header formatting (`Write-SectionHeader`, `Write-SubsectionHeader`).
     - `TextFile.psm1` - UTF-8 (no BOM) file/JSON write helpers (`Write-TextFileUtf8NoBom`, `Write-JsonFileUtf8NoBom`).
+    - `ProcessRunner.psm1` - unified external command runner (`Invoke-ExternalCommandLogged`) writing to `.tmp\\process\\process.log`.
     - `ExtendedAppList.psm1`, `UpdatableApps.psm1` - list formatting and update detection.
     - Backup/restore helpers (`BackupConfig`, `BackupPersist`, `BackupArchive`, `BeforeAfterState`, etc.).
     - Path and JSON helpers (`PathTools`, `JsonFile`, `ScoopPathTools`, etc.).
@@ -56,6 +57,7 @@ graph TD
   - Script references use full names (e.g., `script 42_Update-Apps.ps1`) in messages.
 - Error handling:
   - `$ErrorActionPreference = 'Stop'` in scripts.
+  - External commands: run via `Invoke-ExternalCommandLogged` to avoid `NativeCommandError` transcript noise and keep console output consistent with log output.
   - Shared helpers return exit codes (`0` success, `4` controlled failure conditions).
   - `Test-ScoopInstalled` centralizes "is Scoop usable?" checks.
 - Visual output:

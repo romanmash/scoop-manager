@@ -33,6 +33,13 @@ try {
     }
 } catch { }
 
+try {
+    $processRunner = Join-Path $PSScriptRoot 'ProcessRunner.psm1'
+    if (Test-Path -LiteralPath $processRunner) {
+        Import-Module $processRunner -Force -Global -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch { }
+
 function Set-ConsoleWindowIcon {
     [CmdletBinding()]
     param(

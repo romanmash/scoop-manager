@@ -104,7 +104,11 @@ function Get-AppSources {
     $bucketsDir = Join-Path $ScoopRoot 'buckets'
     try {
         if (Test-Path $ScoopShim) {
-            $listOutput = & $ScoopShim list 2>&1
+            $projectRoot = Split-Path -Parent $PSScriptRoot
+            Assert-ExternalCommandRunner -Caller 'Get-AppSources'
+
+            $listCmd = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+            $listOutput = if ($listCmd.Output) { $listCmd.Output -split "\r?\n" } else { @() }
             $inTable = $false
             foreach ($line in $listOutput) {
                 $trimmed = $line.Trim()
@@ -314,12 +318,33 @@ function Get-UpdatableVersions {
     if ($null -eq $AppsList -or $AppsList -isnot [array]) {
         return @()
     }
+
+    # If the latest bucket version is already installed for an app (any version folder),
+    # treat that app as up-to-date even if older versions also exist.
+    $installedVersionsByApp = @{}
+    foreach ($entry in $AppsList) {
+        $name = [string]$entry.Name
+        $ver  = [string]$entry.Version
+        if (-not $name -or -not $ver) { continue }
+        if (-not $installedVersionsByApp.ContainsKey($name)) {
+            $installedVersionsByApp[$name] = @{}
+        }
+        $installedVersionsByApp[$name][$ver] = $true
+    }
     
     $updatableVersions = @()
     foreach ($app in $AppsList) {
         # Skip if app is held (all versions of held apps cannot be updated)
         if ($HeldApps.ContainsKey($app.Name)) {
             continue
+        }
+
+        # If the latest version is already installed for this app, skip all updates for it.
+        if ($LatestBucketVersions.ContainsKey($app.Name)) {
+            $latestVersionStr = [string]$LatestBucketVersions[$app.Name]
+            if ($installedVersionsByApp.ContainsKey($app.Name) -and $installedVersionsByApp[$app.Name].ContainsKey($latestVersionStr)) {
+                continue
+            }
         }
         
         # Skip if this specific version is pinned (pinned versions cannot be updated)

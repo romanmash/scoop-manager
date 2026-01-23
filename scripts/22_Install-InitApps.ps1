@@ -142,9 +142,22 @@ Write-Host ""
 # when checking for uncommitted changes, so updates work even with patches present
 # Note: Patching is already done by Initialize-ScoopEnvironment, so we only need to check
 # if re-patching is needed after update (Scoop may have overwritten lib/system.ps1)
-& $ScoopShim update | Out-Host
+$updateResult = Invoke-ScoopUpdate -ScoopShim $ScoopShim -ProjectRoot $ProjectRoot
 [Console]::Out.Flush()
 Write-Host ""
+
+if ($updateResult.HadErrors) {
+    $shouldContinue = Confirm-ContinueWithStaleBuckets -PromptTitle "Scoop/bucket update reported errors (network/git issue)."
+    if (-not $shouldContinue) {
+        Write-Host ""
+        Write-Warning "Aborted: continuing with stale buckets was declined."
+        Write-Host ""
+        exit 4
+    }
+    Write-Host ""
+    Write-Warning "Continuing with existing local bucket metadata (may be stale)."
+    Write-Host ""
+}
 
 # Patch Scoop core after update (Scoop may have overwritten lib/system.ps1)
 # This is expected behavior - we automatically patch to maintain stealth mode
@@ -166,7 +179,7 @@ if ($config.buckets -and $config.buckets.Count -gt 0) {
         $bucketName = $bucket.name
         Write-Host "[*] Adding bucket: $bucketName"
         [Console]::Out.Flush()
-        & $ScoopShim bucket add $bucketName | Out-Host
+        $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('bucket', 'add', $bucketName) -Stream:$true
         [Console]::Out.Flush()
         Write-Host ""
     }
@@ -247,7 +260,7 @@ if ($config.apps -and $config.apps.Count -gt 0) {
             # Keep if: pinned OR should exist in target
             if (-not $isPinned -and -not $shouldExist) {
                 Write-Host "[*] Uninstalling non-pinned version: $appName@$installedVersion"
-                & $ScoopShim uninstall "${appName}@${installedVersion}" | Out-Host
+                $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('uninstall', "${appName}@${installedVersion}") -Stream:$true
                 Write-Host ""
             }
         }
@@ -294,11 +307,11 @@ if ($config.apps -and $config.apps.Count -gt 0) {
                     Write-Host ""
                     Write-Host "[*] Installing: $identifier"
                     [Console]::Out.Flush()
-                    & $ScoopShim install $identifier | Out-Host
+                    $installCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('install', $identifier) -Stream:$true
                     [Console]::Out.Flush()
                     
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Warning "Install failed for $identifier (exit code $LASTEXITCODE)"
+                    if ($installCmd.ExitCode -ne 0) {
+                        Write-Warning "Install failed for $identifier (exit code $($installCmd.ExitCode))"
                         Write-Host ""
                         continue
                     }
@@ -364,7 +377,7 @@ if ($config.apps -and $config.apps.Count -gt 0) {
                     Write-Host ""
                     Write-Host "[*] Installing latest version explicitly: $latestIdentifier"
                     [Console]::Out.Flush()
-                    & $ScoopShim install $latestIdentifier | Out-Host
+                    $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('install', $latestIdentifier) -Stream:$true
                     [Console]::Out.Flush()
                     Write-Host ""
                 } elseif ($latestBucketVersion -and ($allInstalledVersions -contains $latestBucketVersion)) {
@@ -449,7 +462,7 @@ if ($config.apps -and $config.apps.Count -gt 0) {
             
             if ($desiredVersion -ne $actualCurrent) {
                 Write-Host "[*] Setting current version for $appName to $desiredVersion"
-                & $ScoopShim reset "$appName@$desiredVersion" | Out-Host
+                $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('reset', "$appName@$desiredVersion") -Stream:$true
                 Write-Host ""
                 
                 # Patch install.json after reset (reset might recreate it pointing to workspace)
@@ -488,13 +501,13 @@ if ($config.apps -and $config.apps.Count -gt 0) {
         
         if ($shouldHold) {
             Write-Host "[*] Holding $appName (app-set has 'hold:true')"
-            & $ScoopShim hold $appName | Out-Host
+            $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('hold', $appName) -Stream:$true
             Write-Host ""
         } else {
             # Only unhold if we're sure there's no hold - don't call unhold if already not held
             # (scoop unhold on a non-held app shows INFO message, which is fine)
             Write-Host "[*] Ensuring $appName is not held (no 'hold:true' in app-set)"
-            & $ScoopShim unhold $appName 2>&1 | Out-Null  # Suppress INFO messages
+            $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('unhold', $appName) -Stream:$false -NoHostOutput
             Write-Host ""
         }
 
@@ -510,7 +523,6 @@ Write-Host ""
 Write-SectionHeader -Title '[OK] Installation complete!'
 
 # Show final state
-# Note: ConvertFrom-ScoopList now uses file-based output capture to reliably detect held apps
 Show-BeforeAfterState -ScoopRoot $ScoopRoot -ScoopShim $ScoopShim -ShowAfter
 
 exit 0

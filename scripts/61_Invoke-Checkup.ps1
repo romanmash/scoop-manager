@@ -14,6 +14,6 @@ Import-Module $ModulePath -Force
 $ScoopEnvModule = Join-Path $PSScriptRoot '..\modules\ScoopEnvironment.psm1'
 Import-Module $ScoopEnvModule -Force
 
-Invoke-ScoopCommandScript -Command "checkup" -InfoMessage "Running Scoop checkup..."
+Invoke-ScoopCommandScript -Command "checkup" -InfoMessage "Running Scoop checkup..." | Out-Null
 
 exit 0

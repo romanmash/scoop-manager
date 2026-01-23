@@ -199,10 +199,8 @@ try {
 
             if (Test-Path $ScoopShim) {
                 Write-Host "[*] Configuring VirusTotal API key via scoop config..."
-                $ErrorActionPreference = 'Continue'
-                & $ScoopShim config virustotal_api_key $vtConfig.ApiKey 2>&1 | Out-Host
-                $configExitCode = $LASTEXITCODE
-                $ErrorActionPreference = 'Stop'
+                $configCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('config', 'virustotal_api_key', $vtConfig.ApiKey) -Stream:$true
+                $configExitCode = $configCmd.ExitCode
 
                 if ($configExitCode -eq $null -or $configExitCode -eq 0) {
                     Write-Host "[OK] VirusTotal API key configured from manager_config.json"
@@ -321,10 +319,8 @@ if (Test-Path $ScoopShim) {
 
                 Write-Host "[*] Installing core app: $appName"
                 [Console]::Out.Flush()
-                $ErrorActionPreference = 'Continue'
-                & $ScoopShim install $appName 2>&1 | Out-Host
-                $installExitCode = $LASTEXITCODE
-                $ErrorActionPreference = 'Stop'
+                $installCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('install', $appName) -Stream:$true
+                $installExitCode = $installCmd.ExitCode
                 [Console]::Out.Flush()
 
                 if (Test-Path -LiteralPath $appDir) {
@@ -354,15 +350,9 @@ Write-SectionHeader -Title 'INSTALLED APPS'
 
 $ScoopShim = Join-Path $ScoopRoot 'shims\scoop.cmd'
 if (Test-Path $ScoopShim) {
-    # Suppress error action for list command as it may return non-zero exit code
-    # (exit code 1 is normal when no apps are installed)
-    $ErrorActionPreference = 'Continue'
-    $listOutput = & $ScoopShim list 2>&1
-    $listExitCode = $LASTEXITCODE
-    $listOutput | Out-Host
-    $ErrorActionPreference = 'Stop'
+    # Note: `scoop list` may exit with code 1 when no apps are installed.
+    $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$true
     
-    # If exit code is 1 and output says "There aren't any apps installed", that's normal
 } else {
     Write-Host "(Scoop shim not yet available)"
 }

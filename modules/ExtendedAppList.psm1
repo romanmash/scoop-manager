@@ -43,7 +43,12 @@ function Format-AppListTable {
         
         [Parameter(Mandatory=$false)]
         [switch]$ShowUpdates = $false,
-        
+
+        # Optional cache: app name -> (version string -> $true).
+        # When provided, avoids rebuilding the map in callers that already computed it.
+        [Parameter(Mandatory=$false)]
+        [hashtable]$InstalledVersionsByApp = $null,
+
         # Defensive: absorb unexpected default params like -LiteralPath from shell defaults
         [Parameter(Mandatory=$false)]
         [object]$LiteralPath = $null,
@@ -54,6 +59,23 @@ function Format-AppListTable {
     
     if ($AppsList.Count -eq 0) {
         return
+    }
+
+    # Map installed versions per app for "latest already installed" detection.
+    # If the latest bucket version is already installed for an app, we treat it as up-to-date
+    # even if older versions also exist.
+    $installedVersionsByApp = $InstalledVersionsByApp
+    if (-not $installedVersionsByApp) {
+        $installedVersionsByApp = @{}
+        foreach ($entry in $AppsList) {
+            $name = [string]$entry.Name
+            $ver  = [string]$entry.Version
+            if (-not $name -or -not $ver) { continue }
+            if (-not $installedVersionsByApp.ContainsKey($name)) {
+                $installedVersionsByApp[$name] = @{}
+            }
+            $installedVersionsByApp[$name][$ver] = $true
+        }
     }
     
     # Sort by name, then by version (current first)
@@ -103,9 +125,16 @@ function Format-AppListTable {
         if ($ShowUpdates -and $LatestBucketVersions.ContainsKey($app.Name)) {
             $latestVersion = $LatestBucketVersions[$app.Name]
             $currentInstalledVersion = $app.Version
+
+            # If latest is already installed for this app, don't show an update marker.
+            $latestAlreadyInstalled = $false
+            $latestVersionStr = [string]$latestVersion
+            if ($installedVersionsByApp.ContainsKey($app.Name) -and $installedVersionsByApp[$app.Name].ContainsKey($latestVersionStr)) {
+                $latestAlreadyInstalled = $true
+            }
             
             # Check if latest bucket version is newer than this installed version
-            if ($latestVersion -ne $currentInstalledVersion) {
+            if (-not $latestAlreadyInstalled -and $latestVersion -ne $currentInstalledVersion) {
                 $isNewer = $false
                 try {
                     if ([version]$latestVersion -gt [version]$currentInstalledVersion) {
@@ -189,7 +218,11 @@ function Show-ExtendedAppList {
     $appSources = @{}
     try {
         if (Test-Path $ScoopShim) {
-            $listOutput = & $ScoopShim list 2>&1
+            $ProjectRoot = Split-Path -Parent $PSScriptRoot
+            Assert-ExternalCommandRunner -Caller 'Show-ExtendedAppList'
+
+            $listCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+            $listOutput = if ($listCmd.Output) { $listCmd.Output -split "\r?\n" } else { @() }
             $inTable = $false
             foreach ($line in $listOutput) {
                 $trimmed = $line.Trim()
@@ -381,13 +414,26 @@ function Show-ExtendedAppList {
     
     # Display in table format using shared function
     if ($appsList.Count -gt 0) {
+        # Map installed versions per app for "latest already installed" checks in the summary.
+        $installedVersionsByApp = @{}
+        foreach ($entry in $appsList) {
+            $name = [string]$entry.Name
+            $ver  = [string]$entry.Version
+            if (-not $name -or -not $ver) { continue }
+            if (-not $installedVersionsByApp.ContainsKey($name)) {
+                $installedVersionsByApp[$name] = @{}
+            }
+            $installedVersionsByApp[$name][$ver] = $true
+        }
+
         Format-AppListTable -AppsList $appsList `
                             -HeldApps $heldApps `
                             -PinnedVersions $pinnedVersions `
                             -AppSources $appSources `
                             -LatestBucketVersions $latestBucketVersions `
                             -BucketsDir $bucketsDir `
-                            -ShowUpdates:$ShowUpdates
+                            -ShowUpdates:$ShowUpdates `
+                            -InstalledVersionsByApp $installedVersionsByApp
         
         # Summary
         $totalApps = ($appsList | Select-Object -Unique Name).Count
@@ -483,6 +529,14 @@ function Show-ExtendedAppList {
                 # Skip if app is held
                 if ($heldApps.ContainsKey($app.Name)) {
                     continue
+                }
+
+                # If latest is already installed for this app, treat it as up-to-date.
+                if ($latestBucketVersions.ContainsKey($app.Name)) {
+                    $latestVerStr = [string]$latestBucketVersions[$app.Name]
+                    if ($installedVersionsByApp.ContainsKey($app.Name) -and $installedVersionsByApp[$app.Name].ContainsKey($latestVerStr)) {
+                        continue
+                    }
                 }
                 
                 # Skip if this specific version is pinned

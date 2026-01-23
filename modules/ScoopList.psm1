@@ -32,7 +32,11 @@ function ConvertFrom-ScoopList {
     $apps = @()
     
     try {
-        $listOutput = & $ScoopShim list 2>&1
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        Assert-ExternalCommandRunner -Caller 'ConvertFrom-ScoopList'
+
+        $listCmd = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+        $listOutput = if ($listCmd.Output) { $listCmd.Output -split "\r?\n" } else { @() }
         $inTable = $false
         
         foreach ($line in $listOutput) {

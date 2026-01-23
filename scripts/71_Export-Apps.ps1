@@ -59,7 +59,8 @@ Write-SubsectionHeader -Title 'Current Apps (All Versions)'
 Show-ExtendedAppList -ScoopRoot $ScoopRoot -ScoopShim $ScoopShim
 
 # Get canonical list output for checking if apps are installed
-$listOutput = & $ScoopShim list 6>&1
+$listCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+$listOutput = if ($listCmd.Output) { $listCmd.Output -split "\r?\n" } else { @() }
 $listText = $listOutput -join "`n"
 
 # Check if there are no apps installed
@@ -170,7 +171,8 @@ if ($listText -match "There aren't any apps installed") {
         $description = $null
         $homepage = $null
         $license = $null
-        $manifestOutput = & $ScoopShim cat $appName 2>&1 | Out-String
+        $manifestCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('cat', $appName) -Stream:$false -NoHostOutput
+        $manifestOutput = $manifestCmd.Output
         if ($manifestOutput) {
             $manifest = $manifestOutput | ConvertFrom-Json
             if ($manifest.description) { $description = $manifest.description }

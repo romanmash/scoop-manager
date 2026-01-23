@@ -14,6 +14,6 @@ Import-Module $ModulePath -Force
 $ScoopEnvModule = Join-Path $PSScriptRoot '..\modules\ScoopEnvironment.psm1'
 Import-Module $ScoopEnvModule -Force
 
-Invoke-ScoopCommandScript -Command "config" -InfoMessage "Current Scoop configuration:"
+Invoke-ScoopCommandScript -Command "config" -InfoMessage "Current Scoop configuration:" | Out-Null
 
 exit 0

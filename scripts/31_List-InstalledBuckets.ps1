@@ -15,6 +15,6 @@ $ScoopEnvModule = Join-Path $PSScriptRoot '..\modules\ScoopEnvironment.psm1'
 Import-Module $ScoopEnvModule -Force
 
 # Use native scoop bucket list command via shared wrapper
-Invoke-ScoopCommandScript -Command "bucket list" -InfoMessage "Installed buckets:"
+Invoke-ScoopCommandScript -Command "bucket list" -InfoMessage "Installed buckets:" | Out-Null
 
 exit 0

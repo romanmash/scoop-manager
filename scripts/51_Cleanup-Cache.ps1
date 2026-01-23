@@ -21,6 +21,6 @@ $commands = @(
     @{ Command = "cache show"; Message = "Cache status after cleanup:" }
 )
 
-Invoke-ScoopCommandScript -MultipleCommands $commands
+Invoke-ScoopCommandScript -MultipleCommands $commands | Out-Null
 
 exit 0

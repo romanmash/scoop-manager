@@ -35,7 +35,8 @@ $currentScoopVersion = $null
 $latestScoopVersion = $null
 
 try {
-    $statusOutput = & $ScoopShim status 2>&1
+    $statusCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('status') -Stream:$false -NoHostOutput
+    $statusOutput = if ($statusCmd.Output) { $statusCmd.Output -split "\r?\n" } else { @() }
     
     foreach ($line in $statusOutput) {
         # Check for Scoop update messages
@@ -58,20 +59,24 @@ try {
         if (Test-Path $scoopDir) {
             try {
                 Push-Location $scoopDir
-                $gitStatus = & git fetch 2>&1
-                $gitStatus = & git status 2>&1
+                $null = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('fetch') -Stream:$false -NoHostOutput
+                $gitStatusCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('status') -Stream:$false -NoHostOutput
+                $gitStatus = if ($gitStatusCmd.Output) { $gitStatusCmd.Output -split "\r?\n" } else { @() }
                 if ($gitStatus -match 'behind') {
                     $scoopUpdateAvailable = $true
                     # Try to get version info
-                    $currentCommit = & git rev-parse --short HEAD 2>&1
-                    $latestCommit = & git rev-parse --short origin/master 2>&1
+                    $currentCommitCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('rev-parse','--short','HEAD') -Stream:$false -NoHostOutput
+                    $latestCommitCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('rev-parse','--short','origin/master') -Stream:$false -NoHostOutput
+                    $currentCommit = (($currentCommitCmd.Output -split "\r?\n" | Select-Object -First 1) -as [string]).Trim()
+                    $latestCommit = (($latestCommitCmd.Output -split "\r?\n" | Select-Object -First 1) -as [string]).Trim()
                     if ($currentCommit -and $latestCommit) {
                         $currentScoopVersion = $currentCommit
                         $latestScoopVersion = $latestCommit
                     }
                 } else {
                     # Get current version even when up to date
-                    $currentCommit = & git rev-parse --short HEAD 2>&1
+                    $currentCommitCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('rev-parse','--short','HEAD') -Stream:$false -NoHostOutput
+                    $currentCommit = (($currentCommitCmd.Output -split "\r?\n" | Select-Object -First 1) -as [string]).Trim()
                     if ($currentCommit) {
                         $currentScoopVersion = $currentCommit
                     }
@@ -89,7 +94,8 @@ try {
         if (Test-Path $scoopDir) {
             try {
                 Push-Location $scoopDir
-                $currentCommit = & git rev-parse --short HEAD 2>&1
+                $currentCommitCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('rev-parse','--short','HEAD') -Stream:$false -NoHostOutput
+                $currentCommit = (($currentCommitCmd.Output -split "\r?\n" | Select-Object -First 1) -as [string]).Trim()
                 if ($currentCommit) {
                     $currentScoopVersion = $currentCommit
                 }
@@ -129,8 +135,18 @@ if ($scoopUpdateAvailable) {
     $PatchingModulePath = Join-Path $ProjectRoot 'modules\ScoopPatching.psm1'
 
     try {
-        & $ScoopShim update
+        $updateResult = Invoke-ScoopUpdate -ScoopShim $ScoopShim -ProjectRoot $ProjectRoot
         Write-Host ""
+
+        if ($updateResult.HadErrors) {
+            $shouldContinue = Confirm-ContinueWithStaleBuckets -PromptTitle "Scoop/bucket update reported errors (network/git issue)."
+            if (-not $shouldContinue) {
+                throw "Aborted: scoop update reported errors and user chose not to continue with stale buckets."
+            }
+            Write-Host ""
+            Write-Warning "Continuing with existing local bucket metadata (may be stale)."
+            Write-Host ""
+        }
         
         # Apply lib patches after update (Scoop may have overwritten lib files)
         if (Test-Path $PatchingModulePath) {
@@ -146,8 +162,9 @@ if ($scoopUpdateAvailable) {
 if ($scoopUpdateAvailable) {
     Write-SubsectionHeader -Title 'Scoop Status (After)'
     
-    try {
-        $statusOutput = & $ScoopShim status 2>&1
+try {
+        $statusCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath $ScoopShim -ArgumentList @('status') -Stream:$false -NoHostOutput
+        $statusOutput = if ($statusCmd.Output) { $statusCmd.Output -split "\r?\n" } else { @() }
         $scoopUpToDate = $false
         $currentScoopVersionAfter = $null
         
@@ -167,7 +184,8 @@ if ($scoopUpdateAvailable) {
             if (Test-Path $scoopDir) {
                 try {
                     Push-Location $scoopDir
-                    $currentCommit = & git rev-parse --short HEAD 2>&1
+                    $currentCommitCmd = Invoke-ExternalCommandLogged -ProjectRoot $ProjectRoot -FilePath 'git' -ArgumentList @('rev-parse','--short','HEAD') -Stream:$false -NoHostOutput
+                    $currentCommit = (($currentCommitCmd.Output -split "\r?\n" | Select-Object -First 1) -as [string]).Trim()
                     if ($currentCommit) {
                         $currentScoopVersionAfter = $currentCommit
                     }

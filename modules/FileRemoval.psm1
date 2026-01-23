@@ -14,6 +14,13 @@ Import-Module "$PSScriptRoot\FileRemoval.psm1" -Force
 $ok = Remove-DirectorySafe -Path $ScoopRoot -ShowHelp -ScoopRoot $ScoopRoot
 #>
 
+try {
+    $processRunner = Join-Path $PSScriptRoot 'ProcessRunner.psm1'
+    if (Test-Path -LiteralPath $processRunner) {
+        Import-Module $processRunner -Force -Global -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch { }
+
 function Remove-DirectorySafe {
     [CmdletBinding()]
     param(
@@ -143,7 +150,9 @@ function Remove-WithRobocopyMirror {
     $emptyDir = Join-Path $env:TEMP "scoop_empty_$(Get-Random)"
     try {
         New-Item -ItemType Directory -Path $emptyDir -Force -ErrorAction Stop | Out-Null
-        & robocopy $emptyDir $Path /MIR /NFL /NDL /NJH /NJS /R:0 /W:0 2>&1 | Out-Null
+        Assert-ExternalCommandRunner -Caller 'Remove-WithRobocopyMirror'
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        $null = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath 'robocopy' -ArgumentList @($emptyDir, $Path, '/MIR', '/NFL', '/NDL', '/NJH', '/NJS', '/R:0', '/W:0') -Stream:$false -NoHostOutput
         Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
         $ok = -not (Test-Path -LiteralPath $Path)
         if ($ok -and $ShowProgress) { Write-Host "[OK] Removed via robocopy mirror." }
@@ -165,7 +174,9 @@ function Remove-WithCmdRmdir {
     )
     if (-not (Test-Path -LiteralPath $Path)) { return $true }
     try {
-        & cmd /c "rmdir /s /q `"$Path`"" 2>&1 | Out-Null
+        Assert-ExternalCommandRunner -Caller 'Remove-WithCmdRmdir'
+        $projectRoot = Split-Path -Parent $PSScriptRoot
+        $null = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath 'cmd.exe' -ArgumentList @('/c', "rmdir /s /q `"$Path`"") -Stream:$false -NoHostOutput
         $ok = -not (Test-Path -LiteralPath $Path)
         if ($ok -and $ShowProgress) { Write-Host "[OK] Removed via cmd rmdir." }
         return $ok

@@ -103,7 +103,11 @@ function Test-FreshInstallation {
     } catch {
         # If file system check fails, fall back to scoop list (non-critical)
         try {
-            $installedRaw = & $ScoopShim list 2>&1
+            $projectRoot = Split-Path -Parent $PSScriptRoot
+            Assert-ExternalCommandRunner -Caller 'Test-FreshInstallation'
+
+            $installedCmd = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList @('list') -Stream:$false -NoHostOutput
+            $installedRaw = if ($installedCmd.Output) { $installedCmd.Output -split "\r?\n" } else { @() }
             $installedText = $installedRaw -join "`n"
             
             # Check if there are apps installed (excluding scoop itself)

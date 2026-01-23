@@ -23,6 +23,13 @@ Import-Module "$PSScriptRoot\ScoopCommand.psm1" -Force
 Invoke-ScoopCommand -ScoopShim $ScoopShim -Command "bucket list" -InfoMessage "Installed buckets:"
 #>
 
+try {
+    $processRunner = Join-Path $PSScriptRoot 'ProcessRunner.psm1'
+    if (Test-Path -LiteralPath $processRunner) {
+        Import-Module $processRunner -Force | Out-Null
+    }
+} catch { }
+
 function Invoke-ScoopCommand {
     [CmdletBinding()]
     param(
@@ -39,6 +46,11 @@ function Invoke-ScoopCommand {
         [string]$InfoMessage = ""
     )
     
+    if (-not (Get-Command Assert-ExternalCommandRunner -ErrorAction SilentlyContinue)) {
+        throw "Invoke-ScoopCommand: external command runner is not available (failed to import modules/ProcessRunner.psm1)."
+    }
+    Assert-ExternalCommandRunner -Caller 'Invoke-ScoopCommand'
+
     # Display info message if provided
     if ($InfoMessage) {
         Write-Host "[*] $InfoMessage"
@@ -53,31 +65,11 @@ function Invoke-ScoopCommand {
         $allArgs += $argParts
     }
     
-    # Execute command
-    # Suppress error action for external commands as they may return non-zero exit codes even on success
-    $originalErrorAction = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    
-    # Capture output to check if it contains objects
-    # Use splatting (@allArgs) to properly pass array elements as separate arguments
-    # For .ps1 files, this ensures "bucket list" is passed as two arguments, not one
-    $output = & $ScoopShim @allArgs 2>&1
-    
-    # Format and display output
-    if ($output) {
-        # Check if output contains PSCustomObjects (like from 'scoop bucket list')
-        $hasObjects = $output | Where-Object { $_ -is [PSCustomObject] -or ($_ -is [System.Management.Automation.PSObject] -and $_.PSObject.TypeNames -contains 'System.Management.Automation.PSCustomObject') } | Select-Object -First 1
-        if ($hasObjects) {
-            # Format objects as table for better readability
-            $output | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
-        } else {
-            # Output strings and other types directly
-            $output | Out-Host
-        }
-    }
-    
-    $ErrorActionPreference = $originalErrorAction
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    $result = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList $allArgs -Stream:$true
     Write-Host ""
+
+    return $result
 }
 
 function Invoke-ScoopCommandScript {
