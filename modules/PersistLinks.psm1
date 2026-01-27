@@ -463,6 +463,28 @@ function Invoke-PersistLinks {
         [string[]]$AppName
     )
 
+    function Write-PersistLinkResultLine {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory=$true)]
+            [ValidateSet('CREATE','SKIP','WARN')]
+            [string]$Action,
+
+            [Parameter(Mandatory=$true)]
+            [string]$Reason
+        )
+
+        $color = switch ($Action) {
+            'SKIP'   { 'Green' }
+            'CREATE' { 'Cyan' }
+            'WARN'   { 'Yellow' }
+        }
+
+        Write-Host '    Result: ' -NoNewline
+        Write-Host $Action -ForegroundColor $color -NoNewline
+        Write-Host (" ({0})" -f $Reason)
+    }
+
     $config = Get-PersistLinksConfig -ProjectRoot $ProjectRoot
     if (-not $config) {
         return
@@ -546,12 +568,12 @@ function Invoke-PersistLinks {
         }
 
         switch ($item.Action) {
-            'CREATE' { Write-Host ("    Result: CREATE ({0})" -f $item.Reason) }
-            'SKIP'   { Write-Host ("    Result: SKIP ({0})" -f $item.Reason) }
+            'CREATE' { Write-PersistLinkResultLine -Action 'CREATE' -Reason $item.Reason }
+            'SKIP'   { Write-PersistLinkResultLine -Action 'SKIP' -Reason $item.Reason }
             'WARN'   {
                 $hasWarnings = $true
                 Write-Warning ("Persist link issue for {0}: {1}" -f $item.AppName, $item.Reason)
-                Write-Host ("    Result: WARN ({0})" -f $item.Reason)
+                Write-PersistLinkResultLine -Action 'WARN' -Reason $item.Reason
             }
         }
         Write-Host ""

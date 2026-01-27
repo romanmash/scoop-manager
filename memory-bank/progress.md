@@ -17,6 +17,10 @@
 - Stabilized ProcessRunner integration: ensure external-command runner and log writers are available across both menu runs and standalone scripts; reset `.tmp/process/process.log` before each menu script run.
 - Released 1.1.1: widened and truncated Version/Update columns in app tables to keep alignment when versions are long.
 
+## 2026-01-27
+
+- Released 1.1.2: colorized persist link results in 27_ output and expanded `config/persist_links.json`.
+
 ## 2026-01-10
 
 - Added a persist links database (`config/persist_links.json`) and the shared relink helper module (`modules/PersistLinks.psm1`).

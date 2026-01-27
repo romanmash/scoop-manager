@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.2 (2026-01-27)
+
+### Added
+- Colorized persist link results in 27_ preview output (CREATE/SKIP/WARN) for faster scanning.
+
+### Changed
+- Updated `config/persist_links.json` with additional app relink entries/notes.
+
 ## 1.1.1 (2026-01-23)
 
 ### Fixed

@@ -15,7 +15,16 @@
   "everything": [
     {
       "link": "apps\\everything\\current\\Everything.ini",
-      "target": "persist\\everything\\Everything.ini"
+      "target": "persist\\everything\\Everything.ini",
+      "notes": "Remember to copy proxy Everything.ini to the updated app version or change setting via GUI"
+    },
+    {
+      "link": "%LOCALAPPDATA%\\Everything\\",
+      "target": "persist\\everything\\Local\\"
+    },
+    {
+      "link": "%APPDATA%\\Everything\\",
+      "target": "persist\\everything\\Roaming\\"
     }
   ],
   "gitextensions": [
@@ -88,6 +97,17 @@
       "target": "persist\\obsidian\\Roaming\\"
     }
   ],
+  "openboard": [
+    {
+      "link": "%LOCALAPPDATA%\\OpenBoard\\",
+      "target": "persist\\openboard\\Local\\"
+    },
+    {
+      "link": "apps\\openboard\\current\\libcrypto-3-x64.dll",
+      "target": "persist\\openboard\\libcrypto-3-x64.dll",
+      "notes": "It requires scoop install openssl (libcrypto-3-x64.dll)"
+    }
+  ],
   "sumatrapdf": [
     {
       "link": "apps\\sumatrapdf\\current\\sumatrapdfcache\\",
@@ -100,11 +120,27 @@
       "notes": "It seems to be corrected by Scoop already"
     }
   ],
+  "opencode-desktop": [
+    {
+      "link": "%APPDATA%\\ai.opencode.desktop\\",
+      "target": "persist\\opencode-desktop\\Roaming\\"
+    }
+  ],
+  "uv": [
+    {
+      "link": "%APPDATA%\\uv\\",
+      "target": "persist\\uv\\Roaming\\"
+    },
+    {
+      "link": "%LOCALAPPDATA%\\uv\\",
+      "target": "persist\\uv\\Local\\"
+    }
+  ],
   "xnviewmp": [
     {
       "link": "%APPDATA%\\XnViewMP\\",
       "target": "persist\\xnviewmp\\Roaming\\",
-	  "notes": "Remember: set to Current User after Scoop update"
+      "notes": "Remember: set to Current User after Scoop update"
     }
   ]
 }
