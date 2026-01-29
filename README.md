@@ -330,6 +330,7 @@ Key rules:
 - `target` always starts with `persist\` (relative to `portable_scoop\persist`).
 - Trailing `\` in `target` means a folder link; otherwise it is a file link.
 - `link` is absolute (supports env vars) or starts with `apps\` for `portable_scoop\apps\...`.
+- Folder links are created as junctions. File links are created as hard links when possible; if link/target are on different drives, a symbolic link is used instead.
 - Links are applied only if the app is installed.
 - `notes` is optional and ignored by the tool (for human context).
 

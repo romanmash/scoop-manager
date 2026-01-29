@@ -1,25 +1,22 @@
 # Progress Log
 
-## 2026-01-09
+## 2026-01-29
 
-- Added optional persist backup flag for app updates and wired it into script 42.
-- Hardened versioned installs by patching Scoop `lib/manifest.ps1` to handle missing bucket in `install.json`.
-- Improved old-version cleanup reliability by using the shared robust directory removal helper in script 52.
-- Validation: ran the affected scripts in a local test run; confirmed 42_ updates and 52_ cleanup complete without the prior errors.
+- Released 1.1.3: persist file relinks now fall back to symbolic links when link/target are on different drives.
 
-## 2026-01-22
+## 2026-01-27
 
-- Released 1.0.7: fixed app version sorting to handle non-semver strings without terminating errors in logs.
-- Released 1.1.0: fixed multi-version update detection (41/42), improved bucket update robustness (prompt to continue with stale buckets when `scoop update` reports errors) (41/42/49), and unified external command execution (Scoop/git/etc.) via `modules/ProcessRunner.psm1` to keep console output consistent with transcript/log files and avoid `NativeCommandError` noise.
+- Released 1.1.2: colorized persist link results in 27_ output and expanded `config/persist_links.json`.
 
 ## 2026-01-23
 
 - Stabilized ProcessRunner integration: ensure external-command runner and log writers are available across both menu runs and standalone scripts; reset `.tmp/process/process.log` before each menu script run.
 - Released 1.1.1: widened and truncated Version/Update columns in app tables to keep alignment when versions are long.
 
-## 2026-01-27
+## 2026-01-22
 
-- Released 1.1.2: colorized persist link results in 27_ output and expanded `config/persist_links.json`.
+- Released 1.0.7: fixed app version sorting to handle non-semver strings without terminating errors in logs.
+- Released 1.1.0: fixed multi-version update detection (41/42), improved bucket update robustness (prompt to continue with stale buckets when `scoop update` reports errors) (41/42/49), and unified external command execution (Scoop/git/etc.) via `modules/ProcessRunner.psm1` to keep console output consistent with transcript/log files and avoid `NativeCommandError` noise.
 
 ## 2026-01-10
 
@@ -27,6 +24,13 @@
 - Introduced script `27_Fix-PersistLinks.ps1` with preview/confirm flow and detailed link checks (exists, link type, target match).
 - Wired persist relinks into install/update/import flows (19, 22, 29, 42) to apply per app when installed.
 - Validation: manual run of 27_ to verify preview output and link creation behavior.
+
+## 2026-01-09
+
+- Added optional persist backup flag for app updates and wired it into script 42.
+- Hardened versioned installs by patching Scoop `lib/manifest.ps1` to handle missing bucket in `install.json`.
+- Improved old-version cleanup reliability by using the shared robust directory removal helper in script 52.
+- Validation: ran the affected scripts in a local test run; confirmed 42_ updates and 52_ cleanup complete without the prior errors.
 
 ## 2025-12-31
 

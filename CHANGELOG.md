@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3 (2026-01-29)
+
+### Fixed
+- Persist links: file relinks now use a symbolic link when link/target are on different drives (hard links require same drive).
+
 ## 1.1.2 (2026-01-27)
 
 ### Added

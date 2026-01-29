@@ -45,6 +45,16 @@
       "target": "persist\\handy\\Roaming\\"
     }
   ],
+  "lmstudio": [
+    {
+      "link": "%USERPROFILE%\\.lmstudio\\settings.json",
+      "target": "persist\\lmstudio\\.lmstudio\\settings.json"
+    },
+    {
+      "link": "%USERPROFILE%\\.lmstudio\\mcp.json",
+      "target": "persist\\lmstudio\\.lmstudio\\mcp.json"
+    }
+  ],
   "notepadplusplus": [
     {
       "link": "apps\\notepadplusplus\\current\\backup\\",
@@ -124,6 +134,22 @@
     {
       "link": "%APPDATA%\\ai.opencode.desktop\\",
       "target": "persist\\opencode-desktop\\Roaming\\"
+    }
+  ],
+  "podman": [
+    {
+      "link": "%APPDATA%\\containers\\",
+      "target": "persist\\podman\\Roaming\\containers\\"
+    },
+    {
+      "link": "%USERPROFILE%\\.config\\containers\\podman\\",
+      "target": "persist\\podman\\.config\\containers\\podman\\"
+    }
+  ],
+  "podman-desktop": [
+    {
+      "link": "%APPDATA%\\Podman Desktop\\",
+      "target": "persist\\podman-desktop\\Roaming\\"
     }
   ],
   "uv": [

@@ -272,6 +272,23 @@ function Build-PersistLinkPlan {
         [string[]]$AppNameFilter
     )
 
+    function Get-PathDriveRoot {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory=$true)]
+            [string]$Path
+        )
+
+        try {
+            $root = [System.IO.Path]::GetPathRoot($Path)
+            if ($root) {
+                return $root.TrimEnd('\')
+            }
+        } catch { }
+
+        return $null
+    }
+
     $plan = @()
 
     $filterSet = @{}
@@ -312,6 +329,16 @@ function Build-PersistLinkPlan {
             $targetPath = $targetInfo.Path
             $isFolder = $targetInfo.IsFolder
             $desiredType = if ($isFolder) { 'Junction' } else { 'HardLink' }
+
+            # Hard links require the link and target to be on the same drive.
+            # When they differ, fall back to a file symbolic link (portable_scoop is often on D: while user profile is on C:).
+            if (-not $isFolder) {
+                $linkDrive = Get-PathDriveRoot -Path $linkPath
+                $targetDrive = Get-PathDriveRoot -Path $targetPath
+                if ($linkDrive -and $targetDrive -and -not $linkDrive.Equals($targetDrive, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $desiredType = 'SymbolicLink'
+                }
+            }
 
             $existing = Get-ExistingLinkInfo -LinkPath $linkPath
             $targetExists = Test-Path -LiteralPath $targetPath
@@ -621,6 +648,8 @@ function Invoke-PersistLinks {
 
             if ($item.LinkType -eq 'Junction') {
                 New-Item -ItemType Junction -Path $item.LinkPath -Target $item.TargetPath | Out-Null
+            } elseif ($item.LinkType -eq 'SymbolicLink') {
+                New-Item -ItemType SymbolicLink -Path $item.LinkPath -Target $item.TargetPath | Out-Null
             } else {
                 New-Item -ItemType HardLink -Path $item.LinkPath -Target $item.TargetPath | Out-Null
             }
@@ -629,6 +658,9 @@ function Invoke-PersistLinks {
         } catch {
             $hasErrors = $true
             Write-Error "Failed to create link for $($item.AppName): $($_.Exception.Message)"
+            if ($item.LinkType -eq 'SymbolicLink') {
+                Write-Warning "Symbolic link creation may require running as Administrator or enabling Windows Developer Mode."
+            }
         }
     }
 
