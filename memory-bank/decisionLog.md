@@ -1,5 +1,39 @@
 # Decision Log
 
+## 2026-02-15 - Enforce VirusTotal gate across managed app flows
+
+Context:
+
+- VirusTotal checks were previously treated as optional by config (`lookup`) and
+  script-specific logic diverged over time.
+- Import flow (`29`) could prompt skip but still imported the original full app
+  list.
+
+Decision:
+
+- Centralize install/update/import enforcement in
+  `Invoke-VirusTotalGateForApp` and use it from scripts `19`, `22`, `29`, `42`.
+- Treat `Risky`, `Skipped` (unknown/no summary), and `Error` as blocking
+  statuses with a unified `Continue / Skip / Abort` decision prompt.
+- Keep `virustotal.lookup` as the explicit enable/disable gate for managed VirusTotal checks.
+- For canonical import (`29`), implement real skip by writing a filtered
+  temporary import JSON and importing that file.
+
+Reasoning:
+
+- One central gate removes duplicated branching and keeps security policy
+  consistent in every managed app-processing path.
+- Real skip in import makes user decisions effective, not cosmetic.
+
+Impact:
+
+- Managed install/update/import scripts now share one VirusTotal decision path.
+- Missing API key now surfaces as a blocking decision in managed flows instead
+  of silent bypass.
+- Script `28` remains audit/reporting focused (no gate prompt).
+
+---
+
 ## 2025-01-27 – Centralize script bootstrap
 
 Context:

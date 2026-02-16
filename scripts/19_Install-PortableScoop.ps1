@@ -266,14 +266,18 @@ if (Test-Path $ScoopShim) {
             exit 4
         }
 
-        # Load VirusTotal integration (best-effort; only used when lookups are enabled and an API key is configured)
+        # Load VirusTotal integration (required for install gating)
         $vtSettings = $null
         $VirusTotalInitPath = Join-Path $ProjectRoot 'modules\VirusTotalInit.psm1'
         if (Test-Path -LiteralPath $VirusTotalInitPath) {
             Import-Module $VirusTotalInitPath -Force -ErrorAction SilentlyContinue
-            if (Get-Command -Name Initialize-VirusTotalIntegration -ErrorAction SilentlyContinue) {
-                $vtSettings = Initialize-VirusTotalIntegration -ProjectRoot $ProjectRoot
-            }
+        }
+        try {
+            $vtSettings = Initialize-VirusTotalManagedFlow -ProjectRoot $ProjectRoot -OperationLabel 'app installation'
+        } catch {
+            Write-Error $_.Exception.Message
+            Write-Host ""
+            exit 4
         }
 
         # Load persist links module (optional)
@@ -297,24 +301,16 @@ if (Test-Path $ScoopShim) {
                     continue
                 }
 
-                # Optional VirusTotal pre-install check (same Continue / Skip / Abort UX as script 22)
-                if ($vtSettings) {
-                    $vtCheck = Invoke-VirusTotalCheckForApp -AppName $appName -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
-                    if ($vtCheck.Status -eq 'Risky') {
-                        $decision = Invoke-VirusTotalPreInstallDecision -CheckResult $vtCheck
-                        if ($decision -eq 'Abort') {
-                            Write-Warning "Aborting core app installation due to VirusTotal detections."
-                            Write-Host ""
-                            exit 4
-                        } elseif ($decision -eq 'Skip') {
-                            Write-Host "[*] Skipping installation of $appName due to user decision."
-                            Write-Host ""
-                            continue
-                        }
-                    } elseif ($vtCheck.Status -eq 'Error') {
-                        Write-Warning "VirusTotal check encountered an error for app '$appName'. Continuing install."
-                        Write-Host ""
-                    }
+                # Central VirusTotal gate (Continue / Skip / Abort for Risky / Skipped / Error)
+                $vtGate = Invoke-VirusTotalGateForApp -AppName $appName -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
+                if ($vtGate.Decision -eq 'Abort') {
+                    Write-Warning "Aborting core app installation due to VirusTotal decision."
+                    Write-Host ""
+                    exit 4
+                } elseif ($vtGate.Decision -eq 'Skip') {
+                    Write-Host "[*] Skipping installation of $appName due to user decision."
+                    Write-Host ""
+                    continue
                 }
 
                 Write-Host "[*] Installing core app: $appName"

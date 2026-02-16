@@ -23,19 +23,26 @@ function Get-VirusTotalSettings {
         [string]$ProjectRoot
     )
 
-    # Import ManagerConfig for base reading
+    # Import ManagerConfig for lookup toggle reading.
     $ManagerConfigPath = Join-Path $PSScriptRoot 'ManagerConfig.psm1'
     if (-not (Test-Path -LiteralPath $ManagerConfigPath)) {
         Write-Error "ManagerConfig.psm1 module not found at: $ManagerConfigPath"
         throw "ManagerConfig.psm1 module not found"
     }
 
+    # Import VirusTotalConfig for API-key parsing (single source of truth).
+    $VirusTotalConfigPath = Join-Path $PSScriptRoot 'VirusTotalConfig.psm1'
+    if (-not (Test-Path -LiteralPath $VirusTotalConfigPath)) {
+        Write-Error "VirusTotalConfig.psm1 module not found at: $VirusTotalConfigPath"
+        throw "VirusTotalConfig.psm1 module not found"
+    }
+
     Import-Module $ManagerConfigPath -Force
+    Import-Module $VirusTotalConfigPath -Force
 
     $config = Get-ManagerConfigJson -ProjectRoot $ProjectRoot
 
     $enabledOnInstall = $false
-    $apiKey = $null
 
     if ($config -and $config.virustotal) {
         $vtSection = $config.virustotal
@@ -44,16 +51,14 @@ function Get-VirusTotalSettings {
         if ($vtSection.PSObject.Properties.Name -contains 'lookup') {
             $enabledOnInstall = [bool]$vtSection.lookup
         }
+    }
 
-        # Only consider the API key when lookups are enabled
-        if ($enabledOnInstall -and $vtSection.PSObject.Properties.Name -contains 'api_key') {
-            $rawKey = $vtSection.api_key
-            if ($rawKey -and $rawKey -is [string]) {
-                $trimmed = $rawKey.Trim()
-                if ($trimmed.Length -gt 0 -and $trimmed -ne 'YOUR_API_KEY_HERE') {
-                    $apiKey = $trimmed
-                }
-            }
+    # Resolve API key via shared helper to avoid duplicate parsing logic.
+    $apiKey = $null
+    if ($enabledOnInstall) {
+        $vtConfig = Get-VirusTotalConfig -ProjectRoot $ProjectRoot
+        if ($vtConfig -and $vtConfig.ApiKey) {
+            $apiKey = $vtConfig.ApiKey
         }
     }
 
@@ -75,7 +80,7 @@ function Invoke-VirusTotalCheckForApp {
         [Parameter(Mandatory = $true)]
         [string]$ScoopShim,
 
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $false)]
         [pscustomobject]$Settings,
 
         [ValidateSet('Install', 'Audit')]
@@ -98,6 +103,12 @@ function Invoke-VirusTotalCheckForApp {
             'VirusTotal lookup is disabled by configuration.'
         } else {
             'VirusTotal API key not configured.'
+        }
+
+        if ($Mode -eq 'Audit') {
+            Write-Warning "VirusTotal check skipped/unavailable for app '$AppSpec'. Treating as potentially unsafe."
+            Write-Host "[*] Details: $message"
+            Write-Host ""
         }
 
         return [pscustomobject]@{
@@ -211,8 +222,13 @@ function Invoke-VirusTotalCheckForApp {
     $totalEngines = $null
     $url = $null
     $hasReport = $false
+    $requestFailureMessage = $null
 
     foreach ($line in $output) {
+        if (-not $requestFailureMessage -and $line -match 'VirusTotal request failed:\s*(.+)$') {
+            $requestFailureMessage = $matches[1].Trim()
+        }
+
         # Typical line: ...\7zip.json: 0/57, see https://www.virustotal.com/gui/file/...
         if ($line -match ':\s*(\d+)\/(\d+)\s*,\s*see\s+(https?://\S+)') {
             $detections = [int]$matches[1]
@@ -232,7 +248,10 @@ function Invoke-VirusTotalCheckForApp {
     $status = 'Error'
     $message = ''
 
-    if ($hasReport) {
+    if ($requestFailureMessage) {
+        $status = 'Error'
+        $message = "VirusTotal request failed: $requestFailureMessage"
+    } elseif ($hasReport) {
         if ($detections -eq 0) {
             $status = 'Clean'
             $message = "VirusTotal: $detections/$totalEngines engines flagged."
@@ -262,22 +281,44 @@ function Invoke-VirusTotalCheckForApp {
         Write-Host "[*] Result: $detections/$totalEngines engines flagged"
         if ($url) {
             Write-Host "[*] Report: $url"
-            Write-Host ""
         }
         if ($Mode -eq 'Audit') {
             $warningTarget = if ($displaySpec) { $displaySpec } else { $AppSpec }
             Write-Warning "VirusTotal reported detections for app '$warningTarget'."
+            Write-Host ""
         }
     } elseif ($status -eq 'Skipped') {
-        Write-Host "[*] VirusTotal check for $AppSpec skipped: no summary from 'scoop virustotal' (no manifest/hash available)."
+        if ($Mode -eq 'Audit') {
+            Write-Warning "VirusTotal check skipped/unavailable for app '$AppSpec'. Treating as potentially unsafe."
+            if ($message) {
+                Write-Host "[*] Details: $message"
+            }
+            Write-Host ""
+        } else {
+            Write-Host "[*] VirusTotal check for $AppSpec skipped: no summary from 'scoop virustotal' (no manifest/hash available)."
+        }
     } else {
         # Error status
-        Write-Warning "VirusTotal check failed for app '$AppSpec' (exit code $exitCode)."
-        Write-Host ""
-        if ($output) {
-            Write-Host "[*] Raw output from 'scoop virustotal':"
-            $output | ForEach-Object { Write-Host "    $_" }
+        if ($Mode -eq 'Audit') {
+            $warningTarget = if ($displaySpec) { $displaySpec } else { $AppSpec }
+            $exitCodeText = if ($null -ne $exitCode -and "$exitCode" -ne '') { $exitCode } else { 'n/a' }
+            Write-Warning "VirusTotal check failed for app '$warningTarget' (exit code $exitCodeText)."
+            if ($message) {
+                Write-Host "[*] Details: $message"
+            }
             Write-Host ""
+        } else {
+            $exitCodeText = if ($null -ne $exitCode -and "$exitCode" -ne '') { $exitCode } else { 'n/a' }
+            Write-Host "[*] VirusTotal check failed for app '$displaySpec' (exit code $exitCodeText)."
+            if ($message) {
+                Write-Host "[*] Details: $message"
+            }
+            Write-Host ""
+            if ($output) {
+                Write-Host "[*] Raw output from 'scoop virustotal':"
+                $output | ForEach-Object { Write-Host "    $_" }
+                Write-Host ""
+            }
         }
     }
 
@@ -300,15 +341,33 @@ function Invoke-VirusTotalPreInstallDecision {
         [pscustomobject]$CheckResult
     )
 
-    # For non-risky statuses, default to install
-    if ($CheckResult.Status -ne 'Risky') {
+    $blockingStatuses = @('Risky', 'Skipped', 'Error')
+
+    # For non-blocking statuses, default to install.
+    if ($blockingStatuses -notcontains $CheckResult.Status) {
         return 'Install'
     }
 
     $appName = $CheckResult.AppName
 
-    # Show warning; the Read-Host prompt follows immediately
-    Write-Warning "VirusTotal reported detections for app '$appName'."
+    switch ($CheckResult.Status) {
+        'Risky' {
+            Write-Warning "VirusTotal reported detections for app '$appName'."
+        }
+        'Skipped' {
+            Write-Warning "VirusTotal check was skipped/unavailable for app '$appName'. Treating as potentially unsafe."
+        }
+        'Error' {
+            Write-Warning "VirusTotal check failed for app '$appName'. Treating as potentially unsafe."
+        }
+        default {
+            Write-Warning "VirusTotal check returned status '$($CheckResult.Status)' for app '$appName'."
+        }
+    }
+
+    if ($CheckResult.PSObject.Properties.Name -contains 'Message' -and $CheckResult.Message) {
+        Write-Host "[*] Details: $($CheckResult.Message)"
+    }
 
     # Use a single-line prompt that is also written via Write-Host so it appears in logs.
     # Read-Host is called without a prompt to avoid duplicate text and to keep the
@@ -344,8 +403,46 @@ function Invoke-VirusTotalPreInstallDecision {
     }
 }
 
+function Invoke-VirusTotalGateForApp {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$AppName,
+
+        [Parameter(Mandatory = $false)]
+        [string]$AppSpec,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ScoopShim,
+
+        [Parameter(Mandatory = $false)]
+        [pscustomobject]$Settings,
+
+        [ValidateSet('Install', 'Audit')]
+        [string]$Mode = 'Install'
+    )
+
+    $checkResult = Invoke-VirusTotalCheckForApp -AppName $AppName -AppSpec $AppSpec -ScoopShim $ScoopShim -Settings $Settings -Mode $Mode
+
+    $decision = 'Install'
+    $blockingStatuses = @('Risky', 'Skipped', 'Error')
+    if ($Mode -eq 'Install' -and $blockingStatuses -contains $checkResult.Status) {
+        $decision = Invoke-VirusTotalPreInstallDecision -CheckResult $checkResult
+    }
+
+    [pscustomobject]@{
+        AppName    = $AppName
+        AppSpec    = $AppSpec
+        Status     = $checkResult.Status
+        Message    = $checkResult.Message
+        Decision   = $decision
+        CheckResult = $checkResult
+    }
+}
+
 Export-ModuleMember -Function @(
     'Get-VirusTotalSettings',
     'Invoke-VirusTotalCheckForApp',
-    'Invoke-VirusTotalPreInstallDecision'
+    'Invoke-VirusTotalPreInstallDecision',
+    'Invoke-VirusTotalGateForApp'
 )

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 (2026-02-15)
+
+### Changed
+- VirusTotal enforcement is now centralized via `Invoke-VirusTotalGateForApp` and applied consistently across install/update/import flows (`19`, `22`, `29`, `42`).
+- Install/update/import now treat VirusTotal `Risky`, `Skipped` (lookup disabled, key missing, or no summary), and `Error` as blocking states with a unified `Continue / Skip / Abort` prompt.
+- Manager VirusTotal config now uses `virustotal.lookup` as the explicit enable/disable switch and `virustotal.api_key` for authenticated requests.
+
+### Fixed
+- Canonical import (`29`) now supports real per-app skip: skipped apps are removed from the actual import set via a filtered temporary JSON file.
+- Canonical import VirusTotal checks now preserve bucket context when available (`bucket/app@version`) to avoid ambiguous app resolution.
+- Import completion messaging now reflects reality when all apps are skipped (`Import skipped`) instead of always reporting completion.
+- VirusTotal initialization and gate-availability bootstrap is now unified for managed flows to avoid per-script duplication and drift.
+- Managed flows now print a one-time root-cause hint when VirusTotal settings are unavailable, instead of leaving users without context.
+- Removed duplicate VirusTotal `Error` warnings in install/update/import flows while keeping warning severity in audit mode (`28`).
+
 ## 1.1.3 (2026-01-29)
 
 ### Fixed

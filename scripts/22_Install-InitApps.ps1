@@ -92,14 +92,17 @@ if (-not $isFresh) {
     exit 4
 }
 
-# Load VirusTotal integration (best-effort, only when Scoop is installed and installation is allowed)
+# Load VirusTotal integration (required for install gating)
 $vtSettings = $null
 $VirusTotalInitPath = Join-Path $ProjectRoot 'modules\VirusTotalInit.psm1'
 if (Test-Path -LiteralPath $VirusTotalInitPath) {
     Import-Module $VirusTotalInitPath -Force -ErrorAction SilentlyContinue
-    if (Get-Command -Name Initialize-VirusTotalIntegration -ErrorAction SilentlyContinue) {
-        $vtSettings = Initialize-VirusTotalIntegration -ProjectRoot $ProjectRoot
-    }
+}
+try {
+    $vtSettings = Initialize-VirusTotalManagedFlow -ProjectRoot $ProjectRoot -OperationLabel 'app installation'
+} catch {
+    Write-Error $_.Exception.Message
+    exit 4
 }
 
 Write-SectionHeader -Title 'INSTALLATION'
@@ -284,24 +287,16 @@ if ($config.apps -and $config.apps.Count -gt 0) {
                 $isInstalled = $allInstalledVersions -contains $entry.Version
                 
                 if (-not $isInstalled) {
-                    # Optional VirusTotal pre-install check (deep for explicit version)
-                    if ($vtSettings) {
-                        $vtCheck = Invoke-VirusTotalCheckForApp -AppName $appName -AppSpec $identifier -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
-                        if ($vtCheck.Status -eq 'Risky') {
-                            $decision = Invoke-VirusTotalPreInstallDecision -CheckResult $vtCheck
-                            if ($decision -eq 'Abort') {
-                                Write-Warning "Aborting installation due to VirusTotal detections."
-                                Write-Host ""
-                                exit 4
-                            } elseif ($decision -eq 'Skip') {
-                                Write-Host "[*] Skipping installation of $identifier due to user decision."
-                                Write-Host ""
-                                continue
-                            }
-                        } elseif ($vtCheck.Status -eq 'Error') {
-                            Write-Warning "VirusTotal check encountered an error for app '$appName'. Continuing install."
-                            Write-Host ""
-                        }
+                    # Central VirusTotal gate (deep for explicit version)
+                    $vtGate = Invoke-VirusTotalGateForApp -AppName $appName -AppSpec $identifier -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
+                    if ($vtGate.Decision -eq 'Abort') {
+                        Write-Warning "Aborting installation due to VirusTotal decision."
+                        Write-Host ""
+                        exit 4
+                    } elseif ($vtGate.Decision -eq 'Skip') {
+                        Write-Host "[*] Skipping installation of $identifier due to user decision."
+                        Write-Host ""
+                        continue
                     }
 
                     Write-Host ""
@@ -354,24 +349,16 @@ if ($config.apps -and $config.apps.Count -gt 0) {
                     # So we need to explicitly install the latest version with version specifier
                     $latestIdentifier = "$appName@$latestBucketVersion"
 
-                    # Optional VirusTotal pre-install check (shallow for latest: app only)
-                    if ($vtSettings) {
-                        $vtCheck = Invoke-VirusTotalCheckForApp -AppName $appName -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
-                        if ($vtCheck.Status -eq 'Risky') {
-                            $decision = Invoke-VirusTotalPreInstallDecision -CheckResult $vtCheck
-                            if ($decision -eq 'Abort') {
-                                Write-Warning "Aborting installation due to VirusTotal detections."
-                                Write-Host ""
-                                exit 4
-                            } elseif ($decision -eq 'Skip') {
-                                Write-Host "[*] Skipping installation of $latestIdentifier due to user decision."
-                                Write-Host ""
-                                continue
-                            }
-                        } elseif ($vtCheck.Status -eq 'Error') {
-                            Write-Warning "VirusTotal check encountered an error for app '$appName'. Continuing install."
-                            Write-Host ""
-                        }
+                    # Central VirusTotal gate (latest explicit version)
+                    $vtGate = Invoke-VirusTotalGateForApp -AppName $appName -AppSpec $latestIdentifier -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
+                    if ($vtGate.Decision -eq 'Abort') {
+                        Write-Warning "Aborting installation due to VirusTotal decision."
+                        Write-Host ""
+                        exit 4
+                    } elseif ($vtGate.Decision -eq 'Skip') {
+                        Write-Host "[*] Skipping installation of $latestIdentifier due to user decision."
+                        Write-Host ""
+                        continue
                     }
 
                     Write-Host ""

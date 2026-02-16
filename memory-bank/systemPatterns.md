@@ -16,7 +16,8 @@
     - `ExtendedAppList.psm1`, `UpdatableApps.psm1` - list formatting and update detection.
     - Backup/restore helpers (`BackupConfig`, `BackupPersist`, `BackupArchive`, `BeforeAfterState`, etc.).
     - Path and JSON helpers (`PathTools`, `JsonFile`, `ScoopPathTools`, etc.).
-    - `VirusTotalInit.psm1` - best-effort VirusTotal initialization used by multiple scripts.
+    - `VirusTotalInit.psm1` - shared managed-flow bootstrap for VirusTotal gating.
+    - `VirusTotalScan.psm1` - VirusTotal check parser and central gate (`Invoke-VirusTotalGateForApp`).
 
 ### High-level architecture (mermaid)
 

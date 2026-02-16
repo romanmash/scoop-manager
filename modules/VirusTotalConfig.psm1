@@ -3,7 +3,7 @@
 VirusTotal configuration
 
 .DESCRIPTION
-Provides helper for reading VirusTotal-related configuration from manager_config.json.
+Provides helper for reading VirusTotal API key from manager_config.json.
 
 .EXAMPLE
 Import-Module "$PSScriptRoot\VirusTotalConfig.psm1" -Force
@@ -35,16 +35,6 @@ function Get-VirusTotalConfig {
     }
 
     $vtSection = $config.virustotal
-
-    # Primary toggle: 'lookup' (explicit enable/disable for VirusTotal lookups).
-    $lookupEnabled = $false
-    if ($vtSection.PSObject.Properties.Name -contains 'lookup') {
-        $lookupEnabled = [bool]$vtSection.lookup
-    }
-
-    if (-not $lookupEnabled) {
-        return $null
-    }
 
     $apiKey = $null
     if ($vtSection.PSObject.Properties.Name -contains 'api_key') {

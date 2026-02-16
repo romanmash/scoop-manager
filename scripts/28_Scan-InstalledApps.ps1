@@ -414,6 +414,9 @@ foreach ($appGroup in $entriesByApp) {
             $vtResult = Invoke-VirusTotalCheckForApp -AppName $label -AppSpec $appSpec -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Audit'
         } else {
             # VirusTotal integration not available (module or settings failed to initialize).
+            Write-Warning "VirusTotal check skipped/unavailable for app '$label'. Treating as potentially unsafe."
+            Write-Host "[*] Details: VirusTotal integration not available."
+            Write-Host ""
             $vtResult = [pscustomobject]@{
                 AppName      = $label
                 Detections   = $null
@@ -476,8 +479,38 @@ foreach ($appGroup in $entriesByApp) {
 
 Write-SubsectionHeader -Title 'Summary'
 
-Write-Host ("{0,-24}{1,-12}{2,-12}" -f "App", "VirusTotal", "Antivirus")
-Write-Host ("{0,-24}{1,-12}{2,-12}" -f "---", "--", "--")
+function Limit-AppListCellValue {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [string]$Value,
+
+        # Column width as used by "{0,-N}" formatting.
+        [Parameter(Mandatory = $true)]
+        [int]$Width
+    )
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        return ''
+    }
+
+    # Keep 1 trailing space for readability between adjacent padded columns.
+    $maxLen = [Math]::Max(0, $Width - 1)
+    if ($Value.Length -le $maxLen) {
+        return $Value
+    }
+
+    if ($maxLen -le 1) {
+        return $Value.Substring(0, $maxLen)
+    }
+
+    # Keep visible truncation marker before formatter padding.
+    return ($Value.Substring(0, $maxLen - 1) + '~')
+}
+
+Write-Host ("{0,-28}{1,-12}{2,-12}" -f "App", "VirusTotal", "Antivirus")
+Write-Host ("{0,-28}{1,-12}{2,-12}" -f "---", "--", "--")
 
 $cleanCount = 0
 $riskyCount = 0
@@ -490,7 +523,8 @@ $sortedResults = $results | Sort-Object `
     @{ Expression = { $_.AppSpec } }
 
 foreach ($r in $sortedResults) {
-    $label = if ($r.Version) { "$($r.AppName)@$($r.Version)" } else { $r.AppName }
+    $rawLabel = if ($r.Version) { "$($r.AppName)@$($r.Version)" } else { $r.AppName }
+    $label = Limit-AppListCellValue -Value $rawLabel -Width 28
     $resultCol = if ($r.Detections -ne $null -and $r.TotalEngines -ne $null) { "$($r.Detections)/$($r.TotalEngines)" } else { "-" }
     $avCol = switch ($r.AvStatus) {
         'CleanOrRemediated' { 'Clean' }
@@ -508,7 +542,7 @@ foreach ($r in $sortedResults) {
         'Skipped' { $skippedCount++ }
     }
 
-    Write-Host ("{0,-24}{1,-12}{2,-12}" -f $label, $resultCol, $avCol)
+    Write-Host ("{0,-28}{1,-12}{2,-12}" -f $label, $resultCol, $avCol)
 }
 
 Write-Host ""

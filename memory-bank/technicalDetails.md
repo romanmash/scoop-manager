@@ -109,13 +109,23 @@ Full portable backup:
 VirusTotal:
 
 - `modules/VirusTotalInit.psm1`:
-  - Handles best-effort initialization of VirusTotal integration.
-  - Reads API key from Scoop config (same mechanism as `scoop virustotal`).
+  - Centralizes managed-flow bootstrap (`Initialize-VirusTotalManagedFlow`).
+  - Ensures `Invoke-VirusTotalGateForApp` is available before install/update/import scripts continue.
+- `modules/VirusTotalScan.psm1`:
+  - Provides `Invoke-VirusTotalCheckForApp` (structured status parsing from `scoop virustotal`).
+  - Provides `Invoke-VirusTotalGateForApp` (shared decision gate for managed flows).
+  - For `app@version` in install mode, runs `scoop download app@version --no-update-scoop` first, then checks the generated workspace manifest.
 - Scripts:
-  - `19_Install-PortableScoop.ps1` and `22_Install-InitApps.ps1` ensure
-    VirusTotal integration is usable quickly after install if the key is set.
+  - `19_Install-PortableScoop.ps1`, `22_Install-InitApps.ps1`,
+    `29_Import-Scoop.ps1`, and `42_Update-Apps.ps1` always call the shared gate
+    before processing each app.
+  - Blocking statuses are `Risky`, `Skipped`, and `Error`; user decision is
+    `Continue`, `Skip`, or `Abort`.
+  - `29_Import-Scoop.ps1` supports real skip by generating a filtered temporary
+    import JSON before running `scoop import`.
   - `28_Scan-InstalledApps.ps1` uses VirusTotal to scan installed apps and
-    renders a summary (Clean / Risky / Error / Skipped) plus details.
+    renders a summary (Clean / Risky / Error / Skipped) plus details, without
+    managed-flow gate prompts.
 
 Local antivirus (Windows Defender):
 
@@ -128,8 +138,7 @@ Local antivirus (Windows Defender):
   - Prints threat names, IDs, severity, categories, actions, and timestamps
     when available.
   - Treats Defender integration as best-effort; if Defender is unavailable,
-    VirusTotal output still works when configured.
+    VirusTotal status output is still reported.
 
 These details are kept here to avoid cluttering the README while preserving a
 single, coherent view of how the system behaves in depth.
-

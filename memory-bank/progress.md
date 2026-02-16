@@ -1,5 +1,11 @@
 # Progress Log
 
+## 2026-02-15
+
+- Released 1.2.0: centralized VirusTotal gating across install/update/import flows (`19`, `22`, `29`, `42`) with blocking decisions for `Risky`, `Skipped`, and `Error`.
+- Updated canonical import (`29`) to support real per-app skip by generating a filtered temporary import JSON.
+- Kept explicit VirusTotal lookup control via `virustotal.lookup`, with `virustotal.api_key` used when lookups are enabled.
+
 ## 2026-01-29
 
 - Released 1.1.3: persist file relinks now fall back to symbolic links when link/target are on different drives.

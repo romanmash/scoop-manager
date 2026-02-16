@@ -66,14 +66,17 @@ if (Test-Path -LiteralPath $PersistLinksPath) {
     Import-Module $PersistLinksPath -Force
 }
 
-# Load VirusTotal integration (best-effort)
+# Load VirusTotal integration (required for update gating)
 $vtSettings = $null
 $VirusTotalInitPath = Join-Path $ProjectRoot 'modules\VirusTotalInit.psm1'
 if (Test-Path -LiteralPath $VirusTotalInitPath) {
     Import-Module $VirusTotalInitPath -Force -ErrorAction SilentlyContinue
-    if (Get-Command -Name Initialize-VirusTotalIntegration -ErrorAction SilentlyContinue) {
-        $vtSettings = Initialize-VirusTotalIntegration -ProjectRoot $ProjectRoot
-    }
+}
+try {
+    $vtSettings = Initialize-VirusTotalManagedFlow -ProjectRoot $ProjectRoot -OperationLabel 'updates'
+} catch {
+    Write-Error $_.Exception.Message
+    exit 4
 }
 
 Write-SectionHeader -Title 'UPDATING APPS'
@@ -212,24 +215,17 @@ if ($updatableVersions -and $updatableVersions.Count -gt 0) {
         Write-Host "[*] Updating $appName to version $latestVersion..."
         Write-Host ""
 
-        # Optional VirusTotal pre-update check
-        if ($vtSettings) {
-            $vtCheck = Invoke-VirusTotalCheckForApp -AppName $appName -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
-            if ($vtCheck.Status -eq 'Risky') {
-                $decision = Invoke-VirusTotalPreInstallDecision -CheckResult $vtCheck
-                if ($decision -eq 'Abort') {
-                    Write-Warning "Aborting updates due to VirusTotal detections."
-                    Write-Host ""
-                    exit 4
-                } elseif ($decision -eq 'Skip') {
-                    Write-Host "[*] Skipping update of $appName due to user decision."
-                    Write-Host ""
-                    continue
-                }
-            } elseif ($vtCheck.Status -eq 'Error') {
-                Write-Warning "VirusTotal check encountered an error for app '$appName'. Continuing update."
-                Write-Host ""
-            }
+        # Central VirusTotal gate before installing the target version
+        $updateSpec = "{0}@{1}" -f $appName, $latestVersion
+        $vtGate = Invoke-VirusTotalGateForApp -AppName $appName -AppSpec $updateSpec -ScoopShim $ScoopShim -Settings $vtSettings -Mode 'Install'
+        if ($vtGate.Decision -eq 'Abort') {
+            Write-Warning "Aborting updates due to VirusTotal decision."
+            Write-Host ""
+            exit 4
+        } elseif ($vtGate.Decision -eq 'Skip') {
+            Write-Host "[*] Skipping update of $appName due to user decision."
+            Write-Host ""
+            continue
         }
         
         # Install the latest version from bucket
