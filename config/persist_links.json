@@ -36,7 +36,7 @@
   "g-helper": [
     {
       "link": "%APPDATA%\\GHelper\\",
-      "target": "persist\\g-helper\\Roaming\\"
+      "target": "persist\\g-helper\\data\\"
     }
   ],
   "handy": [
@@ -134,6 +134,10 @@
     {
       "link": "%APPDATA%\\ai.opencode.desktop\\",
       "target": "persist\\opencode-desktop\\Roaming\\"
+    },
+    {
+      "link": "%USERPROFILE%\\.config\\opencode\\",
+      "target": "persist\\opencode-desktop\\.config\\opencode\\"
     }
   ],
   "podman": [
