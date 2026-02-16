@@ -212,7 +212,9 @@ function Invoke-VirusTotalCheckForApp {
 
     Write-Host "[*] VirusTotal check: $displaySpec"
 
-    $cmd = @('virustotal', $specForCommand, '--no-update-scoop')
+    # Check only the requested app; dependency fan-out can cause misleading
+    # first-match parsing and unnecessary API consumption/rate-limit pressure.
+    $cmd = @('virustotal', $specForCommand, '--no-depends', '--no-update-scoop')
 
     $vtResult = Invoke-ExternalCommandLogged -ProjectRoot $projectRoot -FilePath $ScoopShim -ArgumentList $cmd -Stream:$false -NoHostOutput
     $exitCode = $vtResult.ExitCode
@@ -231,16 +233,34 @@ function Invoke-VirusTotalCheckForApp {
 
         # Typical line: ...\7zip.json: 0/57, see https://www.virustotal.com/gui/file/...
         if ($line -match ':\s*(\d+)\/(\d+)\s*,\s*see\s+(https?://\S+)') {
-            $detections = [int]$matches[1]
-            $totalEngines = [int]$matches[2]
-            $url = $matches[3]
+            $currentDetections = [int]$matches[1]
+            $currentTotalEngines = [int]$matches[2]
+            $currentUrl = $matches[3]
+
+            # Keep the worst result when Scoop emits multiple lines
+            # (for example, multiple URLs in one manifest).
+            if (-not $hasReport -or $currentDetections -gt $detections) {
+                $detections = $currentDetections
+                $totalEngines = $currentTotalEngines
+                $url = $currentUrl
+            }
             $hasReport = $true
-            break
+            continue
         }
         # Fallback without URL
         if (-not $hasReport -and $line -match ':\s*(\d+)\/(\d+)') {
             $detections = [int]$matches[1]
             $totalEngines = [int]$matches[2]
+            $hasReport = $true
+            continue
+        }
+        if ($line -match ':\s*(\d+)\/(\d+)') {
+            $currentDetections = [int]$matches[1]
+            $currentTotalEngines = [int]$matches[2]
+            if ($currentDetections -gt $detections) {
+                $detections = $currentDetections
+                $totalEngines = $currentTotalEngines
+            }
             $hasReport = $true
         }
     }

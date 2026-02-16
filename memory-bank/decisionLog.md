@@ -1,5 +1,35 @@
 # Decision Log
 
+## 2026-02-16 - Make VirusTotal gate app-scoped and deterministic
+
+Context:
+
+- VirusTotal checks are executed through `scoop virustotal`, which may include
+  dependency checks unless explicitly disabled.
+- Scoop may emit multiple summary lines for a single invocation (for example
+  manifests with multiple URLs), and first-line parsing can under-report risk.
+
+Decision:
+
+- Run managed VirusTotal checks with `--no-depends` in
+  `Invoke-VirusTotalCheckForApp`.
+- Aggregate all parsed summary lines from Scoop output and keep the worst
+  detection count for final status.
+
+Reasoning:
+
+- Gate decisions must be tied to the requested app, not mixed dependency
+  outcomes from the same command.
+- Security posture should be pessimistic when multiple results are present.
+
+Impact:
+
+- Lower and more predictable VirusTotal API consumption per managed app check.
+- Reduced risk of false-clean statuses in install/update/import gating and
+  audit output.
+
+---
+
 ## 2026-02-15 - Enforce VirusTotal gate across managed app flows
 
 Context:

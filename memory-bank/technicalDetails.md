@@ -115,6 +115,8 @@ VirusTotal:
   - Provides `Invoke-VirusTotalCheckForApp` (structured status parsing from `scoop virustotal`).
   - Provides `Invoke-VirusTotalGateForApp` (shared decision gate for managed flows).
   - For `app@version` in install mode, runs `scoop download app@version --no-update-scoop` first, then checks the generated workspace manifest.
+  - Runs `scoop virustotal` with `--no-depends` to keep checks app-scoped and avoid dependency fan-out in a single gate decision.
+  - When Scoop returns multiple summary lines for a single check, keeps the worst detection result to avoid under-reporting risk.
 - Scripts:
   - `19_Install-PortableScoop.ps1`, `22_Install-InitApps.ps1`,
     `29_Import-Scoop.ps1`, and `42_Update-Apps.ps1` always call the shared gate

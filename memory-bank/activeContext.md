@@ -4,6 +4,7 @@
 
 - Keep managed app flows (`19`, `22`, `29`, `42`) consistent and reliable:
   - Central VirusTotal gating with one shared decision path.
+  - Deterministic app-scoped VirusTotal checks (no dependency fan-out).
   - Consistent external command logging through `ProcessRunner`.
   - Stable post-install/update/import persist relink execution via `PersistLinks`.
 
@@ -17,5 +18,6 @@
 ## Immediate next steps
 
 - Keep security and UX policy centralized (no per-script VT branching drift).
+- Keep VirusTotal result handling deterministic when Scoop emits multiple summary lines.
 - Document behavior changes in README/changelog/memory-bank for every release.
 - Preserve pinned/held semantics while iterating update/import/install flows.

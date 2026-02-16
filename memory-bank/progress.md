@@ -1,5 +1,10 @@
 # Progress Log
 
+## 2026-02-16
+
+- Released 1.2.1: improved VirusTotal reliability by enforcing app-scoped checks (`scoop virustotal --no-depends`) in the shared scan/gate path.
+- Hardened VirusTotal parsing: when Scoop returns multiple summary lines for one check, manager now keeps the worst detection result.
+
 ## 2026-02-15
 
 - Released 1.2.0: centralized VirusTotal gating across install/update/import flows (`19`, `22`, `29`, `42`) with blocking decisions for `Risky`, `Skipped`, and `Error`.

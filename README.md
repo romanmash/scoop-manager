@@ -389,7 +389,8 @@ Scoop Manager uses Scoop's built-in VirusTotal checks (for example `scoop virust
   - `S` - skip this app
   - `A` - abort the whole script
 - Script **29_Import-Scoop** supports real per-app skip: skipped apps are removed from a temporary filtered import JSON before `scoop import` runs.
-- For versioned specs (`app@version`), the gate first runs `scoop download app@version --no-update-scoop` to generate a version-specific manifest, then checks that manifest with `scoop virustotal`.
+- For versioned specs (`app@version`), the gate first runs `scoop download app@version --no-update-scoop` to generate a version-specific manifest, then checks that manifest with `scoop virustotal --no-depends --no-update-scoop`.
+- If Scoop emits multiple VirusTotal summary lines for one check, the manager keeps the worst detection result for gating.
 - Script **28_Scan-InstalledApps** is audit-only: it reports VirusTotal status per app and does not use Continue/Skip/Abort enforcement prompts.
 
 Example of the native Scoop behaviour (when VirusTotal is not yet configured):

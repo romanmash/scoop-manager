@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1 (2026-02-16)
+
+### Changed
+- VirusTotal checks now call `scoop virustotal` with `--no-depends` so each managed app decision is based on the requested app only (no dependency fan-out in the same check).
+
+### Fixed
+- VirusTotal result parsing now aggregates multiple summary lines from Scoop output and keeps the worst detection count, avoiding false-clean outcomes when manifests include multiple URLs.
+
 ## 1.2.0 (2026-02-15)
 
 ### Changed
