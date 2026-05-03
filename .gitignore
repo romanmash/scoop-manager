@@ -1,9 +1,37 @@
+# --------------------------------------------------
+# OS / editor noise
+# --------------------------------------------------
+.DS_Store
+Thumbs.db
 desktop.ini
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# --------------------------------------------------
+# Logs and temporary runtime data
+# --------------------------------------------------
 .logs/
 .tmp/
+*.log
+
+# --------------------------------------------------
+# Local tooling/workspace
+# --------------------------------------------------
 .cursor/
 .vscode/
+.idea/
+*.code-workspace
+
+# --------------------------------------------------
+# Backup/output data (machine-local)
+# --------------------------------------------------
 /backup/
 /config/apps/export_apps_*.json
 /config/scoop/export_scoop_*.json
+
+# --------------------------------------------------
+# Local config and secrets (never commit)
+# --------------------------------------------------
 /config/manager_config.local.json

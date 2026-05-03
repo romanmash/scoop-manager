@@ -84,7 +84,7 @@ try { Import-Module (Join-Path $ProjectRoot 'modules\ProcessRunner.psm1') -Force
 # Set custom console icon (best-effort, ignore failures)
 try {
     Import-Module (Join-Path $ProjectRoot 'modules\ScriptBootstrap.psm1') -Force
-    Set-ConsoleWindowIcon -IconPath (Join-Path $ProjectRoot 'config\scoop.ico')
+    Set-ConsoleWindowIcon -IconPath (Join-Path $ProjectRoot 'docs\assets\logo.ico')
 } catch {
     # Non-fatal: continue without changing icon
 }

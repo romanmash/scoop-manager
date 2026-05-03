@@ -158,7 +158,7 @@ function Initialize-ScriptEnvironment {
     $ctx = Initialize-ScoopEnvironment -UpdateBuckets:$UpdateBuckets -SkipShimValidation:$SkipShimValidation -SuppressStealthMessage:$SuppressStealthMessage -ScriptPath $ScriptPath -SkipLibPatch:$SkipLibPatch
 
     if ($ctx -and -not $script:ConsoleIconInitialized) {
-        $iconPath = Join-Path $ProjectRoot 'config\scoop.ico'
+        $iconPath = Join-Path $ProjectRoot 'docs\assets\logo.ico'
         if (Test-Path -LiteralPath $iconPath) {
             $script:ConsoleIconInitialized = $true
             Set-ConsoleWindowIcon -IconPath $iconPath

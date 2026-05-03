@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.3 (2026-05-03)
+
+### Changed
+- Finalized product naming as **Scoop Manager** and clarified portable installation model (sibling `portable_scoop\` next to `install_scoop\`) in README.
+- Reworked project documentation for public release: trimmed README to a single seamless top-to-bottom narrative (Purpose, How It Works, Tech Stack, Quick Start, Workflows, Folder Structure, Portable Installation Model, Configuration, Security Gates, Architecture Overview, Troubleshooting, Reference Docs).
+- Split deep reference material out of the README into dedicated docs: `docs/SCRIPTS.md` (script catalogue + modules), `docs/CONFIGURATION.md` (JSON config reference), `docs/SECURITY_GATES.md` (VirusTotal gate + Defender flow).
+- Added portfolio-grade README assets: badge banner, centered logo (`docs/assets/logo.png`), CLI screenshot embedded inside How It Works (`docs/assets/repo-card.png`), and a box-drawing folder-structure tree.
+- Fixed Architecture Overview diagram so it renders on GitHub (quoted Mermaid labels, removed parser-breaking parentheses, replaced `<br/>` with `<br>`).
+- Renamed `config/apps/init_apps_test.json` to `config/apps/init_apps_examples.json` to better describe its role as a comprehensive parameter-set reference.
+- Moved `config/scoop.ico` to `docs/assets/logo.ico` and updated the two consoles-icon call sites in `scripts/Manage-ScoopMenu.ps1` and `modules/ScriptBootstrap.psm1`.
+- Added repository baseline artifacts: `LICENSE` (MIT), `CONTRIBUTING.md`, `SECURITY.md`, `AGENTS.md`, `.editorconfig`, `.github/PULL_REQUEST_TEMPLATE.md`, and `config/manager_config.local.example.json`.
+- Refined `.gitignore` layout to clearly separate local secrets, runtime data, and machine-specific artifacts.
+
 ## 1.2.1 (2026-02-16)
 
 ### Changed
