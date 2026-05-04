@@ -1,12 +1,12 @@
 # Scoop Manager
 
-![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey) ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE) ![Version](https://img.shields.io/badge/version-1.2.3-success)
+![Latest release](https://img.shields.io/github/v/release/romanmash/scoop-manager?label=release&color=success) ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey) ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE)
 
 <p align="center">
   <img src="docs/assets/logo.png" alt="Scoop Manager logo" width="128">
 </p>
 
-A production-ready CLI toolkit for managing portable [Scoop](https://scoop.sh/) installations on Windows, driven by an interactive numbered menu (`scoop_manager.cmd`). Designed for portable install, update, and migration of large app sets across machines — without admin rights and without persistent system changes (stealth mode).
+CLI toolkit for managing portable [Scoop](https://scoop.sh/) installations on Windows, driven by an interactive numbered menu (`scoop_manager.cmd`). Designed for portable install, update, and migration of large app sets across machines — without admin rights and without persistent system changes (stealth mode).
 
 ---
 
@@ -36,7 +36,7 @@ This project enables you to:
 - Configuration lives in JSON: `config/manager_config.json` (manager behaviour), `config/apps/init_apps.json` (target app set), `config/persist_links.json` (relinks for apps that store data outside Scoop's `persist`).
 - Migration is by export/import: a single `install_scoop\` + `portable_scoop\` pair plus an `export_apps_*.json` is enough to reproduce the setup on another machine.
 
-> Scoop itself is an open-source project maintained by the Scoop community. See [scoop.sh](https://scoop.sh/) for more information.
+> Scoop itself is an open-source project maintained by the Scoop community. Browse the [Scoop Apps catalogue](https://scoop.sh/#/apps) to see the full set of installable apps; learn more at [scoop.sh](https://scoop.sh/).
 
 ---
 
@@ -48,6 +48,33 @@ This project enables you to:
 - **Archiving / I/O**: built-in `Compress-Archive`, `robocopy`, hard-links / junctions / symlinks for persist relinking
 - **Security**: VirusTotal API (via Scoop), optional Windows Defender (`MpCmdRun.exe`) integration
 - **Project tooling**: Conventional Commits, `.editorconfig`, memory-bank pattern for long-term design notes
+
+---
+
+## Get Scoop Manager
+
+Two paths depending on whether you have git on the target machine.
+
+### With Git (recommended — easy updates)
+
+```text
+git clone https://github.com/romanmash/scoop-manager.git install_scoop
+cd install_scoop
+scoop_manager.cmd
+```
+
+Future updates: `git pull` from inside `install_scoop\`.
+
+### Without Git (ZIP download)
+
+1. Open the [Releases page](https://github.com/romanmash/scoop-manager/releases) and pick the latest version.
+2. Download the `install_scoop-vX.Y.Z.zip` asset.
+3. Extract it next to where you want `portable_scoop\` to live. The ZIP unpacks directly into a top-level `install_scoop\` folder — no rename step needed.
+4. Double-click `install_scoop\scoop_manager.cmd`.
+
+If Windows blocks scripts after extraction, see [Mark of the Web](#mark-of-the-web-downloaded-zips) under Troubleshooting.
+
+Future updates: download the newer release ZIP and replace the `install_scoop\` folder contents (keep your `config/manager_config.local.json` and any `backup/` data).
 
 ---
 

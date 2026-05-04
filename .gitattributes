@@ -1,1 +1,9 @@
 * text=auto
+
+# Exclude internal / repo-only paths from `git archive` (and therefore from
+# the curated install_scoop ZIP attached to GitHub Releases).
+.github/        export-ignore
+memory-bank/    export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+

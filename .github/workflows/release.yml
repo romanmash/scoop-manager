@@ -1,0 +1,69 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release-if-tagged:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect release tag on HEAD
+        id: detect
+        run: |
+          set -euo pipefail
+          tag="$(git tag --points-at HEAD --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+          if [[ -z "$tag" ]]; then
+            echo "No release tag (vX.Y.Z) on HEAD - skipping release."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Release tag on HEAD: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes from CHANGELOG.md
+        if: steps.detect.outputs.tag != ''
+        env:
+          TAG_NAME: ${{ steps.detect.outputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${TAG_NAME#v}"
+          awk -v version="$version" '
+            BEGIN { gsub(/\./, "\\.", version) }
+            $0 ~ "^## " version " \\(" { in_section = 1; next }
+            in_section && /^## / { exit }
+            in_section { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+
+          if [[ ! -s RELEASE_NOTES.md ]]; then
+            echo "No CHANGELOG section found for version ${version}" >&2
+            exit 1
+          fi
+
+      - name: Build curated install_scoop ZIP
+        if: steps.detect.outputs.tag != ''
+        env:
+          TAG_NAME: ${{ steps.detect.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git archive \
+            --format=zip \
+            --prefix="install_scoop/" \
+            -o "install_scoop-${TAG_NAME}.zip" \
+            "${TAG_NAME}"
+
+      - name: Create GitHub Release
+        if: steps.detect.outputs.tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.detect.outputs.tag }}
+          name: Scoop Manager ${{ steps.detect.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          files: install_scoop-${{ steps.detect.outputs.tag }}.zip

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.4 (2026-05-04)
+
+### Added
+- Automated GitHub Releases on push to `main`: the workflow inspects HEAD, and if a `vX.Y.Z` tag points at it, extracts the matching `CHANGELOG.md` section and publishes the release via `softprops/action-gh-release`. Pushing older tags alongside the current one does not create back-fill releases — only the tag on the current HEAD produces a release, and the action updates the existing release idempotently if it already exists.
+- The release attaches a curated `install_scoop-vX.Y.Z.zip` produced by `git archive --prefix=install_scoop/`, so the archive unpacks directly into a top-level `install_scoop/` folder ready to sit next to `portable_scoop/`.
+- `.gitattributes` `export-ignore` directives strip internal/repo-only paths (`memory-bank/`, `.github/`, `.gitattributes`, `.gitignore`) from the curated ZIP.
+- README: new `Get Scoop Manager` section documenting two setup paths — `git clone` (with `git pull` updates) and ZIP download from the Releases page (no git required). Latest-release badge added to the badge row, Scoop Apps catalogue link added to the Scoop attribution blockquote, tagline tightened.
+
 ## 1.2.3 (2026-05-03)
 
 ### Changed
@@ -12,6 +20,12 @@
 - Moved `config/scoop.ico` to `docs/assets/logo.ico` and updated the two consoles-icon call sites in `scripts/Manage-ScoopMenu.ps1` and `modules/ScriptBootstrap.psm1`.
 - Added repository baseline artifacts: `LICENSE` (MIT), `CONTRIBUTING.md`, `SECURITY.md`, `AGENTS.md`, `.editorconfig`, `.github/PULL_REQUEST_TEMPLATE.md`, and `config/manager_config.local.example.json`.
 - Refined `.gitignore` layout to clearly separate local secrets, runtime data, and machine-specific artifacts.
+
+## 1.2.2 (2026-02-16)
+
+### Fixed
+- Persist links: corrected the `g-helper` relink target path so it points at the right `persist\` subpath.
+- Persist links: added an `opencode` desktop-config relink entry so its config is captured under `persist\` like other apps.
 
 ## 1.2.1 (2026-02-16)
 
