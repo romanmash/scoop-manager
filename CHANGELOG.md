@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.5 (2026-08-25)
+
+### Fixed
+- Patched Scoop installer compatibility for CI: `iex`-launched installer failures now exit normally under `env:CI` so pipelines can observe the failing exit code, while interactive `iex` sessions still avoid closing the shell.
+- Broadened the installer administrator exception from GitHub Actions specifically to any CI environment via `env:CI`, while preserving the Windows Sandbox exception.
+
 ## 1.2.4 (2026-05-04)
 
 ### Added

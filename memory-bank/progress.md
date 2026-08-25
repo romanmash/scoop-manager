@@ -1,5 +1,9 @@
 # Progress Log
 
+## 2026-08-25
+
+- Released 1.2.5: updated patched Scoop installer files so CI runs exit normally on `iex` failures and recognize any `env:CI` session as an administrator-check exception.
+
 ## 2026-02-16
 
 - Released 1.2.1: improved VirusTotal reliability by enforcing app-scoped checks (`scoop virustotal --no-depends`) in the shared scan/gate path.
